@@ -18,18 +18,18 @@ Internship project at USTH (University of Science and Technology of Hanoi).
 
 - **JDK 21** (LTS)
 - **Node.js 22 LTS** with npm (minimum 20.19 — required by Angular 21)
-- **Oracle Database 23ai Free** — listener on port 1521
+- **Oracle Database 23ai Free** (default listener port 1521)
 - Windows PowerShell (only for the helper scripts; all commands below also work in any shell)
 
 ## 1. Database setup
 
-1. Install Oracle Database 23ai Free — the PDB service name is **`FREEPDB1`**.
+1. Install Oracle Database 23ai Free — the default PDB service name is **`FREEPDB1`**.
 
 2. Create the application user by running `hospital/sql/setup-hospital-user.sql` **against the PDB**, with any administrative account and any SQL client you prefer. For example, with SYSTEM and sqlplus:
 
    ```powershell
    cd hospital
-   sqlplus system/<system_password>@localhost:1521/freepdb1 "@sql\setup-hospital-user.sql"
+   sqlplus system/<system_password>@<host>:<port>/<pdb_service> "@sql\setup-hospital-user.sql"
    ```
 
    By default the script creates the user `HOSPITAL` with password `Hospital123` and the required privileges — you may change both in the script. It also drops any previous version of the user, so the first backend start always begins from a clean schema.
