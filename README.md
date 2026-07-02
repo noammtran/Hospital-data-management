@@ -34,7 +34,7 @@ Internship project at USTH (University of Science and Technology of Hanoi).
 
    This creates the user `HOSPITAL` with password `Hospital123` and the required privileges.
 
-3. **No manual schema creation is needed.** On first backend start, Flyway automatically applies all migrations in `hospital/src/main/resources/db/migration/` — tables, constraints, triggers and seed data (departments, doctors, medicines, ICD-10 codes, sample patients).
+3. **No manual schema creation is needed.** On first backend start, Flyway automatically applies all migrations in `hospital/src/main/resources/db/migration/` — tables, constraints, triggers and seed data (departments, doctors, medicines, ICD-10 codes, sample patients). The sample data ships inside these migration files, so every fresh installation ends up with exactly the same data set.
 
 ## 2. Run the backend
 
@@ -74,6 +74,23 @@ After both servers are running:
 2. Log in with **any username and password** (authentication is mocked).
 3. Open the **Patients** page — a paginated list of seeded sample patients appears. You can search, filter, view details, create, edit and delete records right away; the database is pre-populated by the migrations.
 4. Optional API check without the UI: `GET http://localhost:8080/api/v1/patients` returns a JSON list of patients.
+
+## What you may change vs. what must match
+
+The values in this guide are convenient defaults, not hard requirements. **You may change freely**, as long as the environment variables stay in sync:
+
+- The `HOSPITAL` username and password — edit them in `sql/setup-hospital-user.sql`, then set `DB_USERNAME` / `DB_PASSWORD` to match.
+- The account and tool used for the setup script — any DBA account works, not only SYSTEM, and any SQL client works, not only `sqlplus`.
+- Database location — Oracle on another host or port is fine; put the address in `DB_URL`.
+- How you launch the backend — `.\mvnw clean package` followed by `java -jar target\hospital-0.0.1-SNAPSHOT.jar` behaves the same as `mvnw spring-boot:run`.
+- The frontend port — `npm start -- --port 4300`.
+
+**These must stay as written:**
+
+- The environment variable names `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` — the backend reads exactly these.
+- Backend port **8080** — the frontend proxy (`proxy.config.js`) targets it; change both together or not at all.
+- `DB_URL` must point to a **PDB** service, not the CDB.
+- The first backend start must run against an **empty schema** — the setup script guarantees this by recreating the user.
 
 ## Helper scripts (optional)
 
