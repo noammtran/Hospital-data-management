@@ -1,0 +1,184 @@
+%% Hospital Patient Management System — ERD
+%% Updated: 2026-04-23
+%%
+%% Key design: PATIENTS không có DEPARTMENT_ID/DOCTOR_ID/ROOM_ID trực tiếp
+%% — vì bệnh nhân có thể chuyển khoa/bác sĩ/phòng trong suốt quá trình điều trị.
+%% Mối quan hệ "hiện tại" lấy từ ADMISSIONS (đợt điều trị đang active).
+
+erDiagram
+    %% ===== Core entities =====
+    PATIENTS ||--o{ ADMISSIONS : "đợt điều trị"
+    PATIENTS ||--o{ DIAGNOSES : "chẩn đoán"
+    PATIENTS ||--o{ PRESCRIPTIONS : "đơn thuốc"
+    PATIENTS ||--o{ APPOINTMENTS : "lịch hẹn"
+    PATIENTS ||--o{ PATIENT_HISTORY : "audit log"
+
+    %% ADMISSIONS — bản lề giải quyết "bệnh nhân không cố định" + đóng vai "lần khám"
+    ADMISSIONS }o--|| DEPARTMENTS : "khoa điều trị"
+    ADMISSIONS }o--|| DOCTORS : "bác sĩ phụ trách"
+    ADMISSIONS }o--o| ROOMS : "phòng (null nếu ngoại trú)"
+    ADMISSIONS ||--o{ DIAGNOSES : "chẩn đoán trong lần khám"
+    ADMISSIONS ||--o{ PRESCRIPTIONS : "đơn thuốc trong lần khám"
+
+    %% DOCTORS thuộc DEPARTMENT
+    DOCTORS }o--|| DEPARTMENTS : "công tác tại"
+
+    %% ROOMS thuộc DEPARTMENT
+    ROOMS }o--|| DEPARTMENTS : "trực thuộc"
+
+    %% Transactional tables ref DOCTORS
+    DIAGNOSES }o--|| DOCTORS : "bác sĩ chẩn đoán"
+    PRESCRIPTIONS }o--|| DOCTORS : "bác sĩ kê đơn"
+    APPOINTMENTS }o--|| DOCTORS : "bác sĩ hẹn"
+    APPOINTMENTS }o--|| DEPARTMENTS : "khoa hẹn"
+
+    %% PRESCRIPTIONS ref MEDICINES và DIAGNOSES
+    PRESCRIPTIONS }o--|| MEDICINES : "thuốc kê"
+    PRESCRIPTIONS }o--o| DIAGNOSES : "dựa trên chẩn đoán"
+
+    %% DIAGNOSES tra cứu ICD10 (không FK cứng — cho phép nhập tự do)
+    DIAGNOSES }o..o| ICD10_CODES : "tra cứu mã ICD"
+
+    PATIENTS {
+        VARCHAR2_36 ID PK "UUID"
+        VARCHAR2_100 FULL_NAME "Họ tên"
+        DATE BIRTH_DATE
+        NUMBER GENDER_CD FK "→ LOOKUP.GENDER"
+        VARCHAR2_255 ADDRESS
+        VARCHAR2_20 PHONE_NO
+        VARCHAR2_50 EMAIL
+        VARCHAR2_20 IDENTITY_NO "Số CCCD"
+        NUMBER BLOOD_TYPE_CD FK "→ LOOKUP.BLOOD_TYPE"
+        VARCHAR2_500 ALLERGIES
+        VARCHAR2_1000 MEDICAL_HISTORY
+        VARCHAR2_20 INSURANCE_NO "Số BHYT"
+        DATE INSURANCE_EXPIRY
+        VARCHAR2_100 EMERGENCY_CONTACT_NAME
+        VARCHAR2_20 EMERGENCY_CONTACT_PHONE
+        VARCHAR2_50 EMERGENCY_CONTACT_RELATION
+        NUMBER STATUS_CD FK "→ LOOKUP.PATIENT_STATUS"
+        VARCHAR2_1000 NOTES
+        VARCHAR2_30 CREATED_BY
+        DATE CREATED_DATE
+        VARCHAR2_30 LAST_UPDATED_BY
+        DATE LAST_UPDATED_DATE
+    }
+
+    ADMISSIONS {
+        VARCHAR2_36 ID PK "UUID"
+        VARCHAR2_36 PATIENT_ID FK
+        NUMBER DEPARTMENT_ID FK
+        NUMBER DOCTOR_ID FK
+        NUMBER ROOM_ID FK "NULL nếu ngoại trú"
+        DATE ADMISSION_DATE
+        DATE DISCHARGE_DATE "NULL khi đang điều trị"
+        VARCHAR2_500 ADMISSION_REASON
+        NUMBER ADMISSION_TYPE_CD FK "→ LOOKUP.ADMISSION_TYPE"
+        NUMBER STATUS_CD FK "→ LOOKUP.ADMISSION_STATUS"
+        VARCHAR2_500 NOTES
+    }
+
+    DEPARTMENTS {
+        NUMBER ID PK
+        VARCHAR2_100 DEPARTMENT_NAME UK
+        VARCHAR2_255 DESCRIPTION
+    }
+
+    DOCTORS {
+        NUMBER ID PK
+        VARCHAR2_20 DOCTOR_CODE UK "BS-001"
+        VARCHAR2_100 FULL_NAME
+        VARCHAR2_100 SPECIALIZATION
+        VARCHAR2_20 PHONE_NO
+        VARCHAR2_50 EMAIL
+        NUMBER DEPARTMENT_ID FK
+        NUMBER STATUS_FLG "1=active, 0=nghỉ"
+    }
+
+    ROOMS {
+        NUMBER ID PK
+        VARCHAR2_50 ROOM_NAME UK "P-101"
+        NUMBER ROOM_TYPE_CD FK "→ LOOKUP.ROOM_TYPE"
+        NUMBER DEPARTMENT_ID FK
+        NUMBER BED_COUNT
+        NUMBER CURRENT_OCCUPANCY
+        NUMBER STATUS_FLG
+    }
+
+    MEDICINES {
+        NUMBER ID PK
+        VARCHAR2_200 MEDICINE_NAME UK
+        VARCHAR2_200 GENERIC_NAME
+        NUMBER MEDICINE_TYPE_CD FK "→ LOOKUP.MEDICINE_TYPE"
+        VARCHAR2_20 UNIT
+        VARCHAR2_200 MANUFACTURER
+        VARCHAR2_500 DESCRIPTION
+        VARCHAR2_500 SIDE_EFFECTS
+        NUMBER STATUS_FLG
+    }
+
+    ICD10_CODES {
+        NUMBER ID PK
+        VARCHAR2_10 ICD_CODE UK "J06.9"
+        VARCHAR2_100 SHORT_DESC
+        VARCHAR2_255 LONG_DESC
+        NUMBER HIPAA_COVERED
+        NUMBER STATUS_FLG
+    }
+
+    DIAGNOSES {
+        VARCHAR2_36 ID PK "UUID"
+        VARCHAR2_36 PATIENT_ID FK
+        VARCHAR2_36 ADMISSION_ID FK "→ lần khám"
+        NUMBER DOCTOR_ID FK
+        DATE DIAGNOSIS_DATE
+        VARCHAR2_10 ICD_CODE "tra cứu, không FK cứng"
+        VARCHAR2_500 DIAGNOSIS_DESC
+        NUMBER SEVERITY_CD FK "→ LOOKUP.SEVERITY"
+        VARCHAR2_500 NOTES
+    }
+
+    PRESCRIPTIONS {
+        VARCHAR2_36 ID PK "UUID"
+        VARCHAR2_36 PATIENT_ID FK
+        VARCHAR2_36 ADMISSION_ID FK "→ lần khám"
+        NUMBER DOCTOR_ID FK
+        VARCHAR2_36 DIAGNOSIS_ID FK "NOT NULL"
+        NUMBER MEDICINE_ID FK
+        DATE PRESCRIPTION_DATE
+        VARCHAR2_100 DOSAGE
+        VARCHAR2_100 FREQUENCY
+        VARCHAR2_50 DURATION
+        VARCHAR2_500 INSTRUCTIONS
+    }
+
+    APPOINTMENTS {
+        VARCHAR2_36 ID PK "UUID"
+        VARCHAR2_36 PATIENT_ID FK
+        NUMBER DOCTOR_ID FK
+        NUMBER DEPARTMENT_ID FK
+        DATE APPOINTMENT_DATE
+        VARCHAR2_10 APPOINTMENT_TIME "HH:mm"
+        VARCHAR2_500 REASON
+        NUMBER STATUS_CD FK "→ LOOKUP.APPOINTMENT_STATUS"
+        VARCHAR2_500 NOTES
+    }
+
+    PATIENT_HISTORY {
+        VARCHAR2_36 ID PK "UUID"
+        VARCHAR2_36 PATIENT_ID FK
+        VARCHAR2_50 FIELD_NAME
+        VARCHAR2_255 OLD_VALUE
+        VARCHAR2_255 NEW_VALUE
+        VARCHAR2_30 CHANGED_BY
+        DATE CHANGED_DATE
+    }
+
+    LOOKUP_VALUES {
+        NUMBER ID PK
+        VARCHAR2_255 LOOKUP_VALUE
+        NUMBER LOOKUP_CD
+        VARCHAR2_30 LOOKUP_GROUP "GENDER/BLOOD_TYPE/PATIENT_STATUS/ADMISSION_TYPE..."
+        NUMBER STATUS_FLG
+        VARCHAR2_255 DESCRIPTION
+    }

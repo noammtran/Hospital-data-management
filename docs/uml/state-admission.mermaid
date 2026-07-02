@@ -1,0 +1,16 @@
+%% State Diagram — Admission Status (ADMISSIONS.admission_status)
+%% Updated: 2026-05-18 (English labels)
+%% ADMISSION_STATUS lookup: 1=Active, 2=Discharged, 3=Transferred
+
+stateDiagram-v2
+    [*] --> Active : Doctor creates ADMISSION
+
+    Active : 1 — Active treatment
+    Discharged : 2 — Discharged
+    Transferred : 3 — Transferred
+
+    Active --> Discharged : Patient discharged
+    Active --> Transferred : Transfer department/room
+
+    Discharged --> [*]
+    Transferred --> [*] : New ADMISSION created

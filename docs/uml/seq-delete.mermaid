@@ -1,0 +1,32 @@
+%% Sequence Diagram — Delete Patient (permanent) — Logical level
+%% Updated: 2026-06-15 — aligned to the implementation: an existence check
+%% followed by a permanent delete, with no archive branch.
+%% Lifelines = logical components, messages = business actions.
+
+sequenceDiagram
+    autonumber
+    actor A as Admin
+    participant V as Patient list (Client)
+    participant API as Patient API (Server)
+    participant BIZ as Patient business rules
+    participant STORE as Patient storage
+
+    A->>V: Click "Delete" on a patient
+    V->>A: Show confirmation dialog
+    A->>V: Confirm
+    V->>API: Request delete patient
+    API->>BIZ: Delete patient
+    BIZ->>STORE: Check that this patient exists
+    STORE-->>BIZ: Exists or not
+
+    alt Patient not found
+        BIZ-->>API: Not found
+        API-->>V: Not found response
+        V-->>A: Show error message
+    else Patient exists
+        BIZ->>STORE: Remove the patient permanently
+        Note over STORE: The patient's linked medical records<br/>are removed together
+        BIZ-->>API: Permanently deleted
+        API-->>V: Success
+        V-->>A: Notify and refresh list
+    end

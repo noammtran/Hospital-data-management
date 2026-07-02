@@ -1,0 +1,21 @@
+<h2 mat-dialog-title>Change history — {{ data.name }}</h2>
+
+<mat-dialog-content>
+  <mtx-grid
+    [data]="items()"
+    [columns]="columns"
+    [length]="total()"
+    [loading]="loading()"
+    [pageOnFront]="false"
+    [pageIndex]="page - 1"
+    [pageSize]="size"
+    [pageSizeOptions]="[10, 20, 50]"
+    [showColumnMenuButton]="false"
+    [noResultText]="'No changes recorded yet'"
+    (page)="onPage($event)"
+  />
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Close</button>
+</mat-dialog-actions>

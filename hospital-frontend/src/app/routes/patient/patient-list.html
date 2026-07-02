@@ -1,0 +1,87 @@
+<mat-card>
+  <mat-card-content>
+    <form class="row" [formGroup]="filterForm">
+      <div class="col-sm-6 col-md-4">
+        <mat-form-field class="w-full">
+          <mat-label>Search</mat-label>
+          <button
+            matPrefix
+            mat-button
+            type="button"
+            class="search-by-btn"
+            [matMenuTriggerFor]="fieldMenu"
+          >
+            {{ searchFieldLabel }}
+            <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
+          </button>
+          <input matInput formControlName="search" />
+          <mat-icon matIconSuffix>search</mat-icon>
+        </mat-form-field>
+        <mat-menu #fieldMenu="matMenu">
+          @for (opt of searchFieldOptions; track opt.value) {
+            <button mat-menu-item type="button" (click)="setSearchField(opt.value)">
+              {{ opt.label }}
+            </button>
+          }
+        </mat-menu>
+      </div>
+      <div class="col-sm-3 col-md-2">
+        <mat-form-field class="w-full">
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="status">
+            <mat-option [value]="null">All</mat-option>
+            @for (opt of statusOptions; track opt.value) {
+              <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="col-sm-3 col-md-2">
+        <mat-form-field class="w-full">
+          <mat-label>Gender</mat-label>
+          <mat-select formControlName="gender">
+            <mat-option [value]="null">All</mat-option>
+            @for (opt of genderOptions; track opt.value) {
+              <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </form>
+
+    <div class="patient-actions d-flex align-items-center m-b-16">
+      <button mat-flat-button color="primary" (click)="openCreate()">
+        <mat-icon>add</mat-icon>
+        Add patient
+      </button>
+      <button
+        mat-flat-button
+        class="btn-delete m-l-8"
+        [disabled]="selected().length === 0"
+        (click)="bulkDelete()"
+      >
+        <mat-icon>delete</mat-icon>
+        Delete selected ({{ selected().length }})
+      </button>
+    </div>
+
+    <mtx-grid
+      [data]="list()"
+      [columns]="columns"
+      [length]="total()"
+      [loading]="loading()"
+      [pageOnFront]="false"
+      [pageIndex]="page - 1"
+      [pageSize]="size"
+      [pageSizeOptions]="[10, 20, 50]"
+      [rowSelectable]="true"
+      [multiSelectable]="true"
+      [disableRowClickSelection]="true"
+      [showColumnMenuButton]="false"
+      [rowHover]="true"
+      [noResultText]="'No patients found'"
+      (page)="onPage($event)"
+      (rowSelectedChange)="onSelectionChange($event)"
+    />
+  </mat-card-content>
+</mat-card>

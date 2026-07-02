@@ -1,0 +1,28 @@
+// Rectangular buttons with slightly rounded corners (override the pill shape).
+.patient-actions button {
+  border-radius: 6px;
+}
+
+// Bulk-delete must read as a destructive action: solid red with white text
+// when enabled. Disabled keeps Material's default greyed-out look.
+.btn-delete:enabled {
+  --mdc-filled-button-container-color: var(--mat-sys-error);
+  --mdc-filled-button-label-text-color: #fff;
+
+  background-color: var(--mat-sys-error);
+  color: #fff;
+
+  .mat-icon {
+    color: #fff;
+  }
+}
+
+// "Search by" field selector embedded at the start of the search box.
+.search-by-btn {
+  min-width: auto;
+  padding: 0 8px;
+  margin-right: 8px;
+  border-radius: 0;
+  border-right: 1px solid rgb(0 0 0 / 12%);
+  white-space: nowrap;
+}

@@ -1,0 +1,140 @@
+<h2 mat-dialog-title>Patient details</h2>
+
+<mat-dialog-content>
+  @if (loading()) {
+    <div class="d-flex justify-content-center p-y-24">
+      <mat-spinner diameter="36" />
+    </div>
+  } @else if (patient(); as p) {
+    <h3 class="section-title">Personal information</h3>
+    <div class="detail-grid">
+      <div class="item"><span class="label">Patient ID</span><span class="value">{{ p.id }}</span></div>
+      <div class="item"><span class="label">Full name</span><span class="value">{{ p.name }}</span></div>
+      <div class="item">
+        <span class="label">Date of birth</span>
+        <span class="value">{{ (p.birthDate | date: 'dd/MM/yyyy') || '—' }}</span>
+      </div>
+      <div class="item"><span class="label">Gender</span><span class="value">{{ genderLabel(p.gender) }}</span></div>
+      <div class="item"><span class="label">ID card number</span><span class="value">{{ p.identityNo || '—' }}</span></div>
+      <div class="item"><span class="label">Phone number</span><span class="value">{{ p.phoneNo || '—' }}</span></div>
+      <div class="item"><span class="label">Email</span><span class="value">{{ p.email || '—' }}</span></div>
+      <div class="item full"><span class="label">Address</span><span class="value">{{ p.address || '—' }}</span></div>
+    </div>
+
+    <h3 class="section-title">Medical information</h3>
+    <div class="detail-grid">
+      <div class="item"><span class="label">Blood type</span><span class="value">{{ bloodTypeLabel(p.bloodType) }}</span></div>
+      <div class="item"><span class="label">Status</span><span class="value">{{ statusLabel(p.status) }}</span></div>
+      <div class="item full"><span class="label">Allergies</span><span class="value">{{ p.allergies || '—' }}</span></div>
+      <div class="item full"><span class="label">Medical history</span><span class="value">{{ p.medicalHistory || '—' }}</span></div>
+    </div>
+
+    <h3 class="section-title">Health insurance</h3>
+    <div class="detail-grid">
+      <div class="item"><span class="label">Insurance number</span><span class="value">{{ p.insuranceNo || '—' }}</span></div>
+      <div class="item">
+        <span class="label">Insurance expiry</span>
+        <span class="value">{{ (p.insuranceExpiry | date: 'dd/MM/yyyy') || '—' }}</span>
+      </div>
+    </div>
+
+    <h3 class="section-title">Emergency contact</h3>
+    <div class="detail-grid">
+      <div class="item"><span class="label">Contact name</span><span class="value">{{ p.emergencyContactName || '—' }}</span></div>
+      <div class="item"><span class="label">Contact phone</span><span class="value">{{ p.emergencyContactPhone || '—' }}</span></div>
+      <div class="item"><span class="label">Relationship</span><span class="value">{{ p.emergencyContactRelation || '—' }}</span></div>
+    </div>
+
+    <h3 class="section-title">Note &amp; system</h3>
+    <div class="detail-grid">
+      <div class="item full"><span class="label">Note</span><span class="value">{{ p.note || '—' }}</span></div>
+      <div class="item">
+        <span class="label">Created by</span>
+        <span class="value">{{ p.createdBy }} — {{ p.createdDate | date: 'dd/MM/yyyy' }}</span>
+      </div>
+      <div class="item">
+        <span class="label">Last updated</span>
+        <span class="value">{{ p.lastUpdatedBy }} — {{ p.lastUpdatedDate | date: 'dd/MM/yyyy' }}</span>
+      </div>
+    </div>
+
+    <h3 class="section-title">Medical record</h3>
+    @if (visitsLoading()) {
+      <div class="d-flex justify-content-center p-y-16"><mat-spinner diameter="28" /></div>
+    } @else if (visits().length === 0) {
+      <p class="empty-record">No visits recorded for this patient.</p>
+    } @else {
+      <mat-accordion multi>
+        @for (v of visits(); track v.admissionId) {
+          <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title>{{ v.admissionDate | date: 'dd/MM/yyyy' }} — {{ v.departmentName }}</mat-panel-title>
+              <mat-panel-description>{{ v.doctorName }}</mat-panel-description>
+            </mat-expansion-panel-header>
+
+            <div class="detail-grid">
+              <div class="item"><span class="label">Admission date</span><span class="value">{{ v.admissionDate | date: 'dd/MM/yyyy' }}</span></div>
+              <div class="item"><span class="label">Discharge date</span><span class="value">{{ (v.dischargeDate | date: 'dd/MM/yyyy') || '—' }}</span></div>
+              <div class="item"><span class="label">Department</span><span class="value">{{ v.departmentName }}</span></div>
+              <div class="item"><span class="label">Doctor</span><span class="value">{{ v.doctorName }}</span></div>
+              <div class="item"><span class="label">Room</span><span class="value">{{ v.roomName || '—' }}</span></div>
+              <div class="item"><span class="label">Type</span><span class="value">{{ admissionTypeLabel(v.type) }}</span></div>
+              <div class="item"><span class="label">Status</span><span class="value">{{ admissionStatusLabel(v.status) }}</span></div>
+              <div class="item full"><span class="label">Reason</span><span class="value">{{ v.reason || '—' }}</span></div>
+            </div>
+
+            <h4 class="record-subtitle">Diagnoses</h4>
+            @if (v.diagnoses.length === 0) {
+              <p class="empty-record">None.</p>
+            } @else {
+              <table class="record-table">
+                <thead>
+                  <tr><th>Date</th><th>ICD-10</th><th>Description</th><th>Severity</th><th>Doctor</th></tr>
+                </thead>
+                <tbody>
+                  @for (d of v.diagnoses; track $index) {
+                    <tr>
+                      <td>{{ d.date | date: 'dd/MM/yyyy' }}</td>
+                      <td>{{ d.icdCode || '—' }}</td>
+                      <td>{{ d.description }}</td>
+                      <td>{{ severityLabel(d.severity) }}</td>
+                      <td>{{ d.doctorName }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+
+            <h4 class="record-subtitle">Prescriptions</h4>
+            @if (v.prescriptions.length === 0) {
+              <p class="empty-record">None.</p>
+            } @else {
+              <table class="record-table">
+                <thead>
+                  <tr><th>Medicine</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Instructions</th></tr>
+                </thead>
+                <tbody>
+                  @for (pr of v.prescriptions; track $index) {
+                    <tr>
+                      <td>{{ pr.medicineName }}</td>
+                      <td>{{ pr.dosage }}</td>
+                      <td>{{ pr.frequency }}</td>
+                      <td>{{ pr.duration }}</td>
+                      <td>{{ pr.instructions || '—' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </mat-expansion-panel>
+        }
+      </mat-accordion>
+    }
+  } @else {
+    <p>Failed to load patient data.</p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Close</button>
+</mat-dialog-actions>

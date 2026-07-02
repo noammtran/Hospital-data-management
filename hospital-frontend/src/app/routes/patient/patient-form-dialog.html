@@ -1,0 +1,195 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Edit patient' : 'Add new patient' }}</h2>
+
+<mat-dialog-content>
+  <form class="form-field-full" [formGroup]="form">
+    <h3 class="section-title">Personal information</h3>
+    <div class="row">
+      <div class="col-sm-6">
+        <mat-form-field>
+          <mat-label>Full name</mat-label>
+          <input matInput formControlName="name" required />
+          @if (form.get('name')?.invalid) {
+            <mat-error>{{ errorOf('name') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="col-sm-3">
+        <mat-form-field>
+          <mat-label>Date of birth</mat-label>
+          <input
+            matInput
+            [matDatepicker]="birthPicker"
+            [max]="today"
+            formControlName="birthDate"
+          />
+          <mat-datepicker-toggle matIconSuffix [for]="birthPicker" />
+          <mat-datepicker #birthPicker />
+          @if (form.get('birthDate')?.invalid) {
+            <mat-error>{{ errorOf('birthDate') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="col-sm-3">
+        <mat-form-field>
+          <mat-label>Gender</mat-label>
+          <mat-select formControlName="gender">
+            <mat-option [value]="null">—</mat-option>
+            @for (opt of genderOptions; track opt.value) {
+              <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="col-sm-6">
+        <mat-form-field>
+          <mat-label>ID card number</mat-label>
+          <input matInput formControlName="identityNo" />
+          @if (form.get('identityNo')?.invalid) {
+            <mat-error>{{ errorOf('identityNo') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="col-sm-6">
+        <mat-form-field>
+          <mat-label>Phone number</mat-label>
+          <input matInput formControlName="phoneNo" />
+          @if (form.get('phoneNo')?.invalid) {
+            <mat-error>{{ errorOf('phoneNo') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="col-sm-6">
+        <mat-form-field>
+          <mat-label>Email</mat-label>
+          <input matInput formControlName="email" />
+          @if (form.get('email')?.invalid) {
+            <mat-error>{{ errorOf('email') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="col-sm-6">
+        <mat-form-field>
+          <mat-label>Address</mat-label>
+          <input matInput formControlName="address" />
+          @if (form.get('address')?.invalid) {
+            <mat-error>{{ errorOf('address') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+    </div>
+
+    <h3 class="section-title">Medical information</h3>
+    <div class="row">
+      <div class="col-sm-3">
+        <mat-form-field>
+          <mat-label>Blood type</mat-label>
+          <mat-select formControlName="bloodType">
+            <mat-option [value]="null">—</mat-option>
+            @for (opt of bloodTypeOptions; track opt.value) {
+              <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="col-sm-3">
+        <mat-form-field>
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="status" required>
+            @for (opt of statusOptions; track opt.value) {
+              <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+            }
+          </mat-select>
+          @if (form.get('status')?.invalid) {
+            <mat-error>{{ errorOf('status') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="col-sm-6">
+        <mat-form-field>
+          <mat-label>Allergies</mat-label>
+          <input matInput formControlName="allergies" />
+          @if (form.get('allergies')?.invalid) {
+            <mat-error>{{ errorOf('allergies') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="col-12">
+        <mat-form-field>
+          <mat-label>Medical history</mat-label>
+          <textarea matInput rows="2" formControlName="medicalHistory"></textarea>
+          @if (form.get('medicalHistory')?.invalid) {
+            <mat-error>{{ errorOf('medicalHistory') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+    </div>
+
+    <h3 class="section-title">Health insurance</h3>
+    <div class="row">
+      <div class="col-sm-6">
+        <mat-form-field>
+          <mat-label>Insurance number</mat-label>
+          <input matInput formControlName="insuranceNo" />
+          @if (form.get('insuranceNo')?.invalid) {
+            <mat-error>{{ errorOf('insuranceNo') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="col-sm-6">
+        <mat-form-field>
+          <mat-label>Insurance expiry</mat-label>
+          <input matInput [matDatepicker]="insurancePicker" formControlName="insuranceExpiry" />
+          <mat-datepicker-toggle matIconSuffix [for]="insurancePicker" />
+          <mat-datepicker #insurancePicker />
+        </mat-form-field>
+      </div>
+    </div>
+
+    <h3 class="section-title">Emergency contact</h3>
+    <div class="row">
+      <div class="col-sm-4">
+        <mat-form-field>
+          <mat-label>Contact name</mat-label>
+          <input matInput formControlName="emergencyContactName" />
+          @if (form.get('emergencyContactName')?.invalid) {
+            <mat-error>{{ errorOf('emergencyContactName') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="col-sm-4">
+        <mat-form-field>
+          <mat-label>Contact phone</mat-label>
+          <input matInput formControlName="emergencyContactPhone" />
+          @if (form.get('emergencyContactPhone')?.invalid) {
+            <mat-error>{{ errorOf('emergencyContactPhone') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="col-sm-4">
+        <mat-form-field>
+          <mat-label>Relationship</mat-label>
+          <input matInput formControlName="emergencyContactRelation" placeholder="father, mother, spouse..." />
+          @if (form.get('emergencyContactRelation')?.invalid) {
+            <mat-error>{{ errorOf('emergencyContactRelation') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="col-12">
+        <mat-form-field>
+          <mat-label>Note</mat-label>
+          <textarea matInput rows="2" formControlName="note"></textarea>
+          @if (form.get('note')?.invalid) {
+            <mat-error>{{ errorOf('note') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button mat-flat-button color="primary" [disabled]="saving()" (click)="save()">
+    {{ saving() ? 'Saving...' : 'Save' }}
+  </button>
+</mat-dialog-actions>

@@ -1,0 +1,136 @@
+%% Class Diagram — Domain Model (logical, framework-agnostic)
+%% Updated: 2026-05-22 (logical-level: business attribute names only —
+%% no Java types, no "Entity" suffix; audit fields summarised in the note)
+
+classDiagram
+    direction LR
+
+    class Patient {
+        +id
+        +fullName
+        +birthDate
+        +gender
+        +phone
+        +email
+        +identityCard
+        +bloodType
+        +allergies
+        +medicalHistory
+        +insurance
+        +status
+        +isArchived
+    }
+
+    class PatientHistoryEntry {
+        +id
+        +patient
+        +changedField
+        +oldValue
+        +newValue
+        +changedBy
+        +changedAt
+    }
+
+    class Admission {
+        +id
+        +patient
+        +department
+        +doctorInCharge
+        +room
+        +admissionDate
+        +dischargeDate
+        +status
+    }
+
+    class Diagnosis {
+        +id
+        +patient
+        +doctor
+        +date
+        +icdCode
+        +description
+        +severity
+    }
+
+    class Prescription {
+        +id
+        +patient
+        +doctor
+        +relatedDiagnosis
+        +medicine
+        +dosage
+        +frequency
+        +duration
+    }
+
+    class Appointment {
+        +id
+        +patient
+        +doctor
+        +department
+        +date
+        +status
+    }
+
+    class Department {
+        +id
+        +code
+        +name
+    }
+
+    class Doctor {
+        +id
+        +code
+        +fullName
+        +specialization
+        +department
+        +isActive
+    }
+
+    class Room {
+        +id
+        +name
+        +type
+        +department
+        +bedCapacity
+        +currentOccupancy
+    }
+
+    class Medicine {
+        +id
+        +name
+        +genericName
+        +form
+        +unit
+        +isActive
+    }
+
+    %% Status values shown via legend, kept out of the class boxes:
+    %%   Patient.status       : Waiting / Examining / Admitted / Discharged
+    %%   Admission.status     : Active / Discharged / Transferred
+    %%   Appointment.status   : Booked / Done / Cancelled / No-show
+    %%   Room.type            : Standard / VIP / ICU / ER
+
+    %% Relationships (business meaning)
+    Patient "1" --> "0..*" PatientHistoryEntry : has change log
+    Patient "1" --> "0..*" Admission : has been admitted
+    Patient "1" --> "0..*" Diagnosis : has been diagnosed
+    Patient "1" --> "0..*" Prescription : has been prescribed
+    Patient "1" --> "0..*" Appointment : has appointments
+
+    Admission "*" --> "1" Department : treated in
+    Admission "*" --> "1" Doctor : in charge of
+    Admission "*" --> "0..1" Room : occupies
+
+    Doctor "*" --> "1" Department : works in
+    Room "*" --> "1" Department : belongs to
+
+    Diagnosis "*" --> "1" Doctor : made by
+    Prescription "*" --> "1" Doctor : prescribed by
+    Prescription "*" --> "1" Medicine : prescribes
+    Prescription "*" --> "0..1" Diagnosis : follows
+
+    Appointment "*" --> "1" Doctor : scheduled with
+    Appointment "*" --> "1" Department : scheduled at
+
+    note "Every record (except change-log entries) carries four traceability fields: created by, created at, last updated by, last updated at. Reference catalogues (ICD-10, lookup values, user accounts) are described in the report text."

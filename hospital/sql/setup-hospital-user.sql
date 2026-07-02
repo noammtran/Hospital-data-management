@@ -1,0 +1,27 @@
+BEGIN
+    EXECUTE IMMEDIATE 'DROP USER hospital CASCADE';
+EXCEPTION
+    WHEN OTHERS THEN
+        IF SQLCODE != -1918 THEN
+            RAISE;
+        END IF;
+END;
+/
+
+CREATE USER hospital IDENTIFIED BY "Hospital123";
+
+GRANT CREATE SESSION       TO hospital;
+GRANT RESOURCE             TO hospital;
+GRANT UNLIMITED TABLESPACE TO hospital;
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE "flyway_schema_history" CASCADE CONSTRAINTS';
+EXCEPTION
+    WHEN OTHERS THEN
+        IF SQLCODE != -942 THEN
+            RAISE;
+        END IF;
+END;
+/
+
+COMMIT;

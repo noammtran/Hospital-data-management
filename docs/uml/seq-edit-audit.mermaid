@@ -1,0 +1,28 @@
+%% Sequence Diagram — Edit Patient + Change History — Logical level
+%% QT-CR-04 + QT-CR-07
+%% Updated: 2026-05-22 (lifelines = logical components, messages = business actions —
+%% no class names, no annotations, no SQL)
+
+sequenceDiagram
+    autonumber
+    actor U as User (Receptionist / Doctor)
+    participant V as Patient edit form (Client)
+    participant API as Patient API (Server)
+    participant BIZ as Patient business rules
+    participant TRK as Change tracker
+    participant STORE as Patient storage
+
+    U->>V: Edit one or more fields (e.g. phone, address)
+    V->>V: Check required fields, formats, lengths
+    V->>API: Submit changes
+    API->>BIZ: Update patient
+    BIZ->>STORE: Save updated patient
+    STORE->>TRK: Notify "patient changed"
+    Note over TRK: Compare new values with old values<br/>and identify the current user
+    loop For every field whose value changed
+        TRK->>STORE: Record one change-log entry<br/>(field, old, new, who, when)
+    end
+    STORE-->>BIZ: Update confirmed
+    BIZ-->>API: Updated
+    API-->>V: Updated successfully
+    V-->>U: Show "Saved" message

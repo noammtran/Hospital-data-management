@@ -1,0 +1,18 @@
+// ng-matero's .row uses negative side margins to offset column padding;
+// inside mat-dialog-content that pulls content under the dialog padding
+// and clips it on the left. Neutralise the negative margins here.
+mat-dialog-content .row {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+// Match the detail popup's section headings for a consistent look.
+.section-title {
+  margin: 16px 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}

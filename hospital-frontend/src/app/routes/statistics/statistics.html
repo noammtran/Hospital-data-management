@@ -1,0 +1,119 @@
+<div class="stats-page">
+  <mat-card class="m-b-16">
+    <mat-card-content>
+      <div class="filter-toolbar">
+        <button
+          mat-stroked-button
+          type="button"
+          [matMenuTriggerFor]="addMenu"
+          [disabled]="availableFilters().length === 0"
+        >
+          <mat-icon>add</mat-icon>
+          Add filter
+        </button>
+        <mat-menu #addMenu="matMenu">
+          @for (def of availableFilters(); track def.key) {
+            <button mat-menu-item type="button" (click)="addFilter(def.key)">{{ def.label }}</button>
+          }
+        </mat-menu>
+
+        <span class="spacer"></span>
+
+        <button mat-flat-button color="primary" type="button" (click)="applyFilter()">
+          <mat-icon>filter_list</mat-icon>
+          Apply filter
+        </button>
+        <button
+          mat-button
+          type="button"
+          [disabled]="activeFilters().length === 0"
+          (click)="clearFilter()"
+        >
+          Clear
+        </button>
+      </div>
+
+      <form [formGroup]="filterForm" class="filter-rows">
+        @if (activeFilters().includes('dates')) {
+          <div class="filter-row">
+            <span class="filter-row-label">Date range</span>
+            <mat-form-field class="date-field" subscriptSizing="dynamic">
+              <mat-label>From</mat-label>
+              <input matInput [matDatepicker]="fromPicker" [max]="today" formControlName="from" />
+              <mat-datepicker-toggle matIconSuffix [for]="fromPicker" />
+              <mat-datepicker #fromPicker />
+            </mat-form-field>
+            <mat-form-field class="date-field" subscriptSizing="dynamic">
+              <mat-label>To</mat-label>
+              <input matInput [matDatepicker]="toPicker" [max]="today" formControlName="to" />
+              <mat-datepicker-toggle matIconSuffix [for]="toPicker" />
+              <mat-datepicker #toPicker />
+            </mat-form-field>
+            <button mat-icon-button type="button" (click)="removeFilter('dates')">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        }
+
+        @if (activeFilters().includes('disease')) {
+          <div class="filter-row">
+            <span class="filter-row-label">Disease (ICD-10)</span>
+            <mat-form-field class="value-field" subscriptSizing="dynamic">
+              <mat-label>Diagnosis</mat-label>
+              <mat-select formControlName="icdCode">
+                @for (opt of diagnosisOptions(); track opt.icdCode) {
+                  <mat-option [value]="opt.icdCode">{{ opt.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <button mat-icon-button type="button" (click)="removeFilter('disease')">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        }
+
+        @if (activeFilters().includes('medicine')) {
+          <div class="filter-row">
+            <span class="filter-row-label">Medicine</span>
+            <mat-form-field class="value-field" subscriptSizing="dynamic">
+              <mat-label>Medicine</mat-label>
+              <mat-select formControlName="medicineId">
+                @for (opt of medicineOptions(); track opt.medicineId) {
+                  <mat-option [value]="opt.medicineId">{{ opt.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <button mat-icon-button type="button" (click)="removeFilter('medicine')">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        }
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  @if (result(); as r) {
+    <mat-card>
+      <mat-card-content>
+        <div class="result-header">
+          <p class="result-count">{{ r.total }} patient(s)</p>
+          <button mat-stroked-button type="button" (click)="openReport()">
+            <mat-icon>description</mat-icon>
+            View as report
+          </button>
+        </div>
+        <mtx-grid
+          [data]="r.patients"
+          [columns]="columns"
+          [loading]="loading()"
+          [pageOnFront]="true"
+          [pageSize]="10"
+          [pageSizeOptions]="[10, 20, 50]"
+          [showColumnMenuButton]="false"
+          [rowHover]="true"
+          [noResultText]="'No patients found'"
+        />
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

@@ -1,0 +1,24 @@
+%% Sequence Diagram — Login flow — Logical level
+%% UC-11 Authenticate
+%% Updated: 2026-05-22 (lifelines = logical components, messages = business actions —
+%% no class names, no BCrypt/JWT/HS256 specifics, no SQL)
+
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant V as Login screen (Client)
+    participant API as Authentication API (Server)
+    participant AUTH as Authentication rules
+    participant STORE as User account storage
+
+    U->>V: Enter username and password
+    V->>API: Submit credentials
+    API->>AUTH: Authenticate this user
+    AUTH->>STORE: Find user account by username
+    STORE-->>AUTH: User account (stored password digest, role)
+    Note over AUTH: Compare the submitted password<br/>with the stored digest.<br/>If it matches, issue an access token<br/>that carries the user role.
+    AUTH-->>API: Access token + role + display name
+    API-->>V: Login successful
+    V-->>U: Save token, redirect to dashboard
+
+    Note over V,API: Every later request carries this token.<br/>The server checks the token and identifies<br/>the current user before serving the request

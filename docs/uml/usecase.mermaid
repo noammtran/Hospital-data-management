@@ -1,0 +1,34 @@
+%% Use Case Diagram — Hospital Patient Management System
+%% Scope: the delivered, proposal-scoped patient-record use cases.
+%% One actor: User (the running system serves a single user, no role hierarchy).
+%% Search and Filter are not goals in themselves; they extend List Patients.
+
+flowchart LR
+    User(("👤 User"))
+
+    subgraph SYS["Hospital Patient Management System"]
+        direction TB
+        UC01(["UC-01<br/>List Patients"])
+        UC02(["UC-02<br/>Search Patients"])
+        UC03(["UC-03<br/>Filter Patients"])
+        UC04(["UC-04<br/>View Patient Detail"])
+        UC05(["UC-05<br/>Create Patient"])
+        UC06(["UC-06<br/>Edit Patient"])
+        UC07(["UC-07<br/>Delete Patient"])
+        UC08(["UC-08<br/>Bulk Delete Patients"])
+        UC09(["UC-09<br/>View Change History"])
+
+        UC02 -. "&lt;&lt;extend&gt;&gt;" .-> UC01
+        UC03 -. "&lt;&lt;extend&gt;&gt;" .-> UC01
+    end
+
+    User --> UC01
+    User --> UC04
+    User --> UC05
+    User --> UC06
+    User --> UC07
+    User --> UC08
+    User --> UC09
+
+    classDef sysBoundary fill:#fafafa,stroke:#333,stroke-width:2px;
+    class SYS sysBoundary;

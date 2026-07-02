@@ -1,0 +1,22 @@
+{
+  "menu": [
+    {
+      "route": "patients",
+      "name": "patients",
+      "type": "link",
+      "icon": "assignment_ind"
+    },
+    {
+      "route": "patient-history",
+      "name": "patient-history",
+      "type": "link",
+      "icon": "history"
+    },
+    {
+      "route": "statistics",
+      "name": "statistics",
+      "type": "link",
+      "icon": "bar_chart"
+    }
+  ]
+}

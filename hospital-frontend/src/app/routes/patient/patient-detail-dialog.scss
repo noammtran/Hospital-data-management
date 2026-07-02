@@ -1,0 +1,80 @@
+.section-title {
+  margin: 16px 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+// Description-table layout: two columns of label/value rows with a thin
+// divider, so every label lines up and values read as one aligned column.
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 40px;
+
+  .item {
+    display: flex;
+    align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px solid rgb(0 0 0 / 8%);
+  }
+
+  .item.full {
+    grid-column: 1 / -1;
+  }
+
+  .label {
+    flex: 0 0 140px;
+    font-size: 13px;
+    color: rgb(0 0 0 / 60%);
+  }
+
+  .value {
+    flex: 1;
+    word-break: break-word;
+  }
+}
+
+@media (width <= 600px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.record-subtitle {
+  margin: 12px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.empty-record {
+  margin: 6px 0;
+  font-size: 13px;
+  color: rgb(0 0 0 / 60%);
+}
+
+.record-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th,
+  td {
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid rgb(0 0 0 / 8%);
+  }
+
+  th {
+    font-weight: 600;
+    color: rgb(0 0 0 / 60%);
+  }
+}
+
+mat-expansion-panel {
+  margin-bottom: 8px;
+}
