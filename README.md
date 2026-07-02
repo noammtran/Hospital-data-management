@@ -12,14 +12,13 @@ Internship project at USTH (University of Science and Technology of Hanoi).
 |------|---------|
 | `hospital/` | Backend - Spring Boot REST API (Maven project) |
 | `hospital-frontend/` | Frontend - Angular web application |
-| `start.ps1` / `stop.ps1` | Convenience scripts for the author's machine (see notes below) |
 
 ## Prerequisites
 
 - **JDK 21** (LTS)
 - **Node.js 22 LTS** with npm (minimum 20.19 - required by Angular 21)
 - **Oracle Database 23ai Free** (default listener port 1521)
-- Windows PowerShell (only for the helper scripts; all commands below also work in any shell)
+- The commands below are shown in PowerShell syntax; any shell works with the equivalent commands
 
 ## 1. Database setup
 
@@ -74,10 +73,6 @@ After both servers are running:
 2. Log in with **any username and password** (authentication is mocked).
 3. Open the **Patients** page - a paginated list of seeded sample patients appears. You can search, filter, view details, create, edit and delete records right away; the database is pre-populated by the migrations.
 4. Optional API check without the UI: `GET http://localhost:8080/api/v1/patients` returns a JSON list of patients.
-
-## Helper scripts (optional)
-
-`start.ps1` starts the Oracle Windows services and opens backend + frontend in separate windows; `stop.ps1` shuts them down. They contain absolute paths and the author's database address - **adjust the variables at the top** before using them on another machine.
 
 ## Troubleshooting
 
