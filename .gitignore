@@ -1,43 +1,32 @@
-# ============================================================
-# Root .gitignore — Hospital Patient Management System
-# Loại trừ những gì KHÔNG thuộc deliverable (mã nguồn, chương
-# trình, hướng dẫn cài đặt). Các .gitignore con trong hospital/
-# và hospital-frontend/ vẫn hoạt động song song bình thường.
-# ============================================================
 
-# --- AI assistant / tooling config (không phải sản phẩm) ---
 /.claude/
 /.agents/
 /.codex/
 /.vscode/
 
-# --- Artifact của tool nâng cấp Java (Copilot java-upgrade) ---
+
 /.github/
 /hospital/.github/
 
-# --- Ghi chú làm việc cá nhân ---
 /docs/Note.txt
 /docs/handoff-2026-06-05.md
 
-# --- Dữ liệu tham khảo tải về (là git repo riêng, chứa cả pccc;
-#     seed thật đã nằm trong hospital/src/main/resources/db/migration) ---
+
 /data/
 
-# --- Tài liệu bên thứ ba (proposal, template của trường) ---
 /docs/ref/
 
-# --- Report LaTeX: là git repo riêng, push lên remote riêng
-#     (github.com/noammtran/report-graduate) ---
+
 /docs/report/
 
-# --- File output vụn ---
+
 /hospital/test-out.txt
 
-# --- Backup thủ công của diagram UML ---
+
 /docs/uml/*.bak*
 /docs/uml/Diagram.backup-*
 /docs/uml/*.wiped-*
 
-# --- OS ---
+
 Thumbs.db
 .DS_Store
