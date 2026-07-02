@@ -1,4 +1,3 @@
-
 /.claude/
 /.agents/
 /.codex/
@@ -8,24 +7,13 @@
 /.github/
 /hospital/.github/
 
-/docs/Note.txt
-/docs/handoff-2026-06-05.md
-
 
 /data/
 
-/docs/ref/
-
-
-/docs/report/
+/docs/
 
 
 /hospital/test-out.txt
-
-
-/docs/uml/*.bak*
-/docs/uml/Diagram.backup-*
-/docs/uml/*.wiped-*
 
 
 Thumbs.db

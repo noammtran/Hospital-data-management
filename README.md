@@ -12,7 +12,6 @@ Internship project at USTH (University of Science and Technology of Hanoi).
 |------|---------|
 | `hospital/` | Backend — Spring Boot REST API (Maven project) |
 | `hospital-frontend/` | Frontend — Angular web application |
-| `docs/` | Design documents: UML/ERD sources and rendered diagrams, defense slides |
 | `start.ps1` / `stop.ps1` | Convenience scripts for the author's machine (see notes below) |
 
 ## Prerequisites
