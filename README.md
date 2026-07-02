@@ -38,12 +38,12 @@ Internship project at USTH (University of Science and Technology of Hanoi).
 
 ## 2. Run the backend
 
-From the `hospital/` directory, set the three connection environment variables, then start. The variable **names** are fixed (the backend reads exactly these); the **values** should match your database — host, port, service and credentials from the previous step. For example, with the defaults:
+From the `hospital/` directory, set the three connection environment variables, then start. The variable **names** are fixed (the backend reads exactly these); the **values** are your own — the host, port and PDB service of your Oracle, and the username and password you created in step 1:
 
 ```powershell
-$env:DB_URL      = 'jdbc:oracle:thin:@localhost:1521/freepdb1'
-$env:DB_USERNAME = 'hospital'
-$env:DB_PASSWORD = 'Hospital123'
+$env:DB_URL      = 'jdbc:oracle:thin:@<host>:<port>/<pdb_service>'
+$env:DB_USERNAME = '<username>'
+$env:DB_PASSWORD = '<password>'
 .\mvnw spring-boot:run
 ```
 
