@@ -25,20 +25,20 @@ Internship project at USTH (University of Science and Technology of Hanoi).
 
 1. Install Oracle Database 23ai Free — the PDB service name is **`FREEPDB1`**.
 
-2. Create the application user by running the setup script **as SYSTEM against the PDB**:
+2. Create the application user by running `hospital/sql/setup-hospital-user.sql` **against the PDB**, with any administrative account and any SQL client you prefer. For example, with SYSTEM and sqlplus:
 
    ```powershell
    cd hospital
    sqlplus system/<system_password>@localhost:1521/freepdb1 "@sql\setup-hospital-user.sql"
    ```
 
-   This creates the user `HOSPITAL` with password `Hospital123` and the required privileges.
+   By default the script creates the user `HOSPITAL` with password `Hospital123` and the required privileges — you may change both in the script. It also drops any previous version of the user, so the first backend start always begins from a clean schema.
 
 3. **No manual schema creation is needed.** On first backend start, Flyway automatically applies all migrations in `hospital/src/main/resources/db/migration/` — tables, constraints, triggers and seed data (departments, doctors, medicines, ICD-10 codes, sample patients). The sample data ships inside these migration files, so every fresh installation ends up with exactly the same data set.
 
 ## 2. Run the backend
 
-From the `hospital/` directory, set the connection environment variables, then start:
+From the `hospital/` directory, set the three connection environment variables, then start. The variable **names** are fixed (the backend reads exactly these); the **values** should match your database — host, port, service and credentials from the previous step. For example, with the defaults:
 
 ```powershell
 $env:DB_URL      = 'jdbc:oracle:thin:@localhost:1521/freepdb1'
@@ -50,7 +50,7 @@ $env:DB_PASSWORD = 'Hospital123'
 - Backend runs at **http://localhost:8080**, API base path `/api/v1`
   (quick check: `GET http://localhost:8080/api/v1/patients`)
 - Run tests: `.\mvnw test`
-- Build a jar: `.\mvnw clean package` → `target/hospital-0.0.1-SNAPSHOT.jar`
+- Build a jar: `.\mvnw clean package` → `target/hospital-0.0.1-SNAPSHOT.jar` (running it with `java -jar` works the same, with the same variables set)
 
 ## 3. Run the frontend
 
@@ -62,7 +62,7 @@ npm start
 ```
 
 - App runs at **http://localhost:4200**
-- The dev server proxies all `/api` requests to the backend on port 8080 (`proxy.config.js`), so **start the backend first**.
+- The dev server proxies all `/api` requests to the backend on port 8080 (`proxy.config.js`), so **start the backend first**. Keep the backend on port 8080, or update `proxy.config.js` to match.
 - The login screen is mocked for demo purposes — **any username/password logs in**.
 - Production build: `npm run build` → `dist/`
 
@@ -74,23 +74,6 @@ After both servers are running:
 2. Log in with **any username and password** (authentication is mocked).
 3. Open the **Patients** page — a paginated list of seeded sample patients appears. You can search, filter, view details, create, edit and delete records right away; the database is pre-populated by the migrations.
 4. Optional API check without the UI: `GET http://localhost:8080/api/v1/patients` returns a JSON list of patients.
-
-## What you may change vs. what must match
-
-The values in this guide are convenient defaults, not hard requirements. **You may change freely**, as long as the environment variables stay in sync:
-
-- The `HOSPITAL` username and password — edit them in `sql/setup-hospital-user.sql`, then set `DB_USERNAME` / `DB_PASSWORD` to match.
-- The account and tool used for the setup script — any DBA account works, not only SYSTEM, and any SQL client works, not only `sqlplus`.
-- Database location — Oracle on another host or port is fine; put the address in `DB_URL`.
-- How you launch the backend — `.\mvnw clean package` followed by `java -jar target\hospital-0.0.1-SNAPSHOT.jar` behaves the same as `mvnw spring-boot:run`.
-- The frontend port — `npm start -- --port 4300`.
-
-**These must stay as written:**
-
-- The environment variable names `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` — the backend reads exactly these.
-- Backend port **8080** — the frontend proxy (`proxy.config.js`) targets it; change both together or not at all.
-- `DB_URL` must point to a **PDB** service, not the CDB.
-- The first backend start must run against an **empty schema** — the setup script guarantees this by recreating the user.
 
 ## Helper scripts (optional)
 
