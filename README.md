@@ -4,7 +4,7 @@ Web application for managing hospital patient records - registration, medical re
 
 Internship project at USTH (University of Science and Technology of Hanoi).
 
-**Tech stack:** Spring Boot 3.5 (Java 21) · Angular 21 · Oracle Database · Maven · npm
+**Tech stack:** Spring Boot 3.5 (Java 21), Angular 21, Oracle Database, Maven, npm
 
 ## Repository layout
 
@@ -50,7 +50,7 @@ $env:DB_PASSWORD = '<password>'
 - Backend runs at **http://localhost:8080**, API base path `/api/v1`
   (quick check: `GET http://localhost:8080/api/v1/patients`)
 - Run tests: `.\mvnw test`
-- Build a jar: `.\mvnw clean package` → `target/hospital-0.0.1-SNAPSHOT.jar` (running it with `java -jar` works the same, with the same variables set)
+- Build a jar: `.\mvnw clean package` produces `target/hospital-0.0.1-SNAPSHOT.jar` (running it with `java -jar` works the same, with the same variables set)
 
 ## 3. Run the frontend
 
@@ -64,7 +64,7 @@ npm start
 - App runs at **http://localhost:4200**
 - The dev server proxies all `/api` requests to the backend on port 8080 (`proxy.config.js`), so **start the backend first**. Keep the backend on port 8080, or update `proxy.config.js` to match.
 - The login screen is mocked for demo purposes - **any username/password logs in**.
-- Production build: `npm run build` → `dist/`
+- Production build: `npm run build` outputs to `dist/`
 
 ## 4. Verify the installation
 
