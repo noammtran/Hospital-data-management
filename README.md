@@ -18,13 +18,12 @@ Internship project at USTH (University of Science and Technology of Hanoi).
 
 - **JDK 21** (LTS)
 - **Node.js 22 LTS** with npm (minimum 20.19 — required by Angular 21)
-- **Oracle Database** — Oracle Database 23ai Free or Oracle XE 21c, listener on port 1521
+- **Oracle Database 23ai Free** — listener on port 1521
 - Windows PowerShell (only for the helper scripts; all commands below also work in any shell)
 
 ## 1. Database setup
 
-1. Install Oracle Database Free and note the **PDB service name**:
-   `FREEPDB1` for 23ai Free, `XEPDB1` for XE 21c.
+1. Install Oracle Database 23ai Free — the PDB service name is **`FREEPDB1`**.
 
 2. Create the application user by running the setup script **as SYSTEM against the PDB**:
 
@@ -42,7 +41,7 @@ Internship project at USTH (University of Science and Technology of Hanoi).
 From the `hospital/` directory, set the connection environment variables, then start:
 
 ```powershell
-$env:DB_URL      = 'jdbc:oracle:thin:@localhost:1521/freepdb1'   # or xepdb1 on XE
+$env:DB_URL      = 'jdbc:oracle:thin:@localhost:1521/freepdb1'
 $env:DB_USERNAME = 'hospital'
 $env:DB_PASSWORD = 'Hospital123'
 .\mvnw spring-boot:run
@@ -85,7 +84,7 @@ After both servers are running:
 | Symptom | Cause / fix |
 |---------|-------------|
 | `ORA-12541: no listener` | Oracle listener service not running, or wrong host/port in `DB_URL` |
-| `ORA-65096: invalid common user` | Connected to the CDB — use the PDB service (`freepdb1` / `xepdb1`) in the URL |
+| `ORA-65096: invalid common user` | Connected to the CDB — use the PDB service `freepdb1` in the URL |
 | `ORA-01017: invalid username/password` | `DB_PASSWORD` not set or does not match the setup script |
 | Port 8080 or 4200 already in use | Stop the conflicting process, or change `server.port` in `application.properties` / use `ng serve --port` |
 | Frontend shows no data | Backend not running — start it first, then reload |
