@@ -18,7 +18,7 @@ Internship project at USTH (University of Science and Technology of Hanoi).
 ## Prerequisites
 
 - **JDK 21** (LTS)
-- **Node.js 20 LTS or newer** with npm
+- **Node.js 22 LTS** with npm (minimum 20.19 — required by Angular 21)
 - **Oracle Database** — Oracle Database 23ai Free or Oracle XE 21c, listener on port 1521
 - Windows PowerShell (only for the helper scripts; all commands below also work in any shell)
 
@@ -67,6 +67,15 @@ npm start
 - The dev server proxies all `/api` requests to the backend on port 8080 (`proxy.config.js`), so **start the backend first**.
 - The login screen is mocked for demo purposes — **any username/password logs in**.
 - Production build: `npm run build` → `dist/`
+
+## 4. Verify the installation
+
+After both servers are running:
+
+1. Open **http://localhost:4200** — the login page appears.
+2. Log in with **any username and password** (authentication is mocked).
+3. Open the **Patients** page — a paginated list of seeded sample patients appears. You can search, filter, view details, create, edit and delete records right away; the database is pre-populated by the migrations.
+4. Optional API check without the UI: `GET http://localhost:8080/api/v1/patients` returns a JSON list of patients.
 
 ## Helper scripts (optional)
 
