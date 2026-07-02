@@ -1,4 +1,4 @@
-# Hospital Patient Management System
+# Development of a medical examination and treatment management software system
 
 Web application for managing hospital patient records — registration, medical records, diagnoses, prescriptions and change history.
 
