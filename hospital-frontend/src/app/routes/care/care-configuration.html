@@ -1,0 +1,340 @@
+<a mat-button routerLink="/care">← Care workspace</a>
+<a
+  mat-button
+  routerLink="/users"
+  [queryParams]="selectedUserId() ? { staffId: selectedUserId() } : {}"
+>
+  Staff details
+</a>
+<h1>Points, services and staff assignments</h1>
+<p>
+  Assign staff to the points where they work. Clinical execution and result validation are separate
+  permissions. An examination doctor must be linked to a doctor record.
+</p>
+@if (error()) {
+  <p class="error" role="alert">{{ error() }}</p>
+}
+@if (saved()) {
+  <p role="status">{{ saved() }}</p>
+}
+@if (options(); as data) {
+  <mat-accordion multi>
+    <mat-expansion-panel [expanded]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title>Staff assignments</mat-panel-title>
+      </mat-expansion-panel-header>
+      @if (selectedStaff(); as staff) {
+        <section class="work-summary" aria-label="Selected staff work setup">
+          <h2>Work setup for {{ staff.name }}</h2>
+          @if (profileLoading()) {
+            <p role="status">Loading work profile…</p>
+          }
+          @if (profileError()) {
+            <p class="error" role="alert">{{ profileError() }}</p>
+            <button mat-button (click)="assignmentForm.controls.userId.setValue(staff.id)">
+              Retry work profile
+            </button>
+          }
+          @if (workProfile(); as profile) {
+            @if (profile.user.mustChangePassword) {
+              <p>The employee must change their temporary password before starting work.</p>
+            }
+            @if (!profile.user.active) {
+              <p>
+                This account is locked. Unlock it in Staff accounts before activating an assignment.
+              </p>
+            }
+            @if (profile.setupIssues.length) {
+              <ul>
+                @for (issue of profile.setupIssues; track issue) {
+                  <li>{{ issueLabel(issue) }}</li>
+                }
+              </ul>
+            }
+            @if (profile.doctor; as doctor) {
+              <p>
+                Linked doctor: {{ doctor.code }} · {{ doctor.name }} · {{ doctor.departmentName
+                }}{{ doctor.active ? '' : ' · Unavailable' }}
+              </p>
+            }
+          }
+        </section>
+      }
+      <form class="config-form" [formGroup]="assignmentForm" (ngSubmit)="save('assignments')">
+        <mat-form-field>
+          <mat-label>Staff account</mat-label>
+          <mat-select formControlName="userId">
+            @for (user of data.staff; track user.id) {
+              <mat-option [value]="user.id">
+                {{ user.name }} · {{ user.role }}{{ user.active ? '' : ' · Inactive' }}
+              </mat-option>
+            }
+          </mat-select>
+          <mat-error>Select staff.</mat-error>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Care point</mat-label>
+          <mat-select formControlName="pointId">
+            @for (point of data.points; track point.id) {
+              <mat-option [value]="point.id">
+                {{ point.name }}{{ point.active ? '' : ' · Unavailable' }}
+              </mat-option>
+            }
+          </mat-select>
+          <mat-error>Select a point.</mat-error>
+        </mat-form-field>
+        @if (canLinkDoctor() && selectedStaff()?.doctorId === null) {
+          <mat-form-field>
+            <mat-label>Existing doctor profile</mat-label>
+            <mat-select formControlName="doctorId">
+              <mat-option [value]="null">Choose a profile</mat-option>
+              @for (doctor of availableDoctors(); track doctor.id) {
+                <mat-option [value]="doctor.id">{{ doctor.name }}</mat-option>
+              }
+            </mat-select>
+            <mat-hint>Only available profiles not linked to another account are listed.</mat-hint>
+          </mat-form-field>
+          <button
+            mat-button
+            type="button"
+            [disabled]="busy() || creatingDoctor()"
+            (click)="startDoctorProfile()"
+          >
+            Create doctor profile
+          </button>
+        }
+        <div class="checks">
+          <mat-checkbox formControlName="active">Assignment active</mat-checkbox>
+          <mat-checkbox formControlName="perform">May perform clinical work</mat-checkbox>
+          <mat-checkbox formControlName="verify">May validate service results</mat-checkbox>
+        </div>
+        <button
+          mat-flat-button
+          type="submit"
+          [disabled]="
+            busy() || creatingDoctor() || profileLoading() || !workProfile() || showDoctorForm()
+          "
+        >
+          Save assignment
+        </button>
+      </form>
+      @if (showDoctorForm()) {
+        <section class="doctor-section" aria-labelledby="new-doctor-title">
+          <h3 id="new-doctor-title">Create and link a doctor profile</h3>
+          <p>
+            Use this for a new doctor who does not already have a profile. It does not create
+            another login account.
+          </p>
+          <form class="config-form" [formGroup]="doctorForm" (ngSubmit)="createDoctorProfile()">
+            <mat-form-field>
+              <mat-label>Doctor code</mat-label>
+              <input matInput formControlName="code" maxlength="20" required />
+              <mat-error>{{ doctorFieldError('code') }}</mat-error>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Doctor name</mat-label>
+              <input matInput formControlName="name" maxlength="100" required />
+              <mat-error>{{ doctorFieldError('name') }}</mat-error>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Department</mat-label>
+              <mat-select formControlName="departmentId" required>
+                @for (department of data.departments; track department.id) {
+                  <mat-option [value]="department.id">{{ department.name }}</mat-option>
+                }
+              </mat-select>
+              <mat-error>{{ doctorFieldError('departmentId') }}</mat-error>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Specialization</mat-label>
+              <input matInput formControlName="specialization" maxlength="100" />
+              <mat-error>{{ doctorFieldError('specialization') }}</mat-error>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Professional phone</mat-label>
+              <input matInput formControlName="phoneNo" maxlength="20" />
+              <mat-error>{{ doctorFieldError('phoneNo') }}</mat-error>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Professional email</mat-label>
+              <input matInput type="email" formControlName="email" maxlength="50" />
+              <mat-error>{{ doctorFieldError('email') }}</mat-error>
+            </mat-form-field>
+            @if (doctorError()) {
+              <p class="error form-message" role="alert">{{ doctorError() }}</p>
+            }
+            <button mat-flat-button type="submit" [disabled]="creatingDoctor() || busy()">
+              {{ creatingDoctor() ? 'Creating…' : 'Create and link profile' }}
+            </button>
+            <button
+              mat-button
+              type="button"
+              [disabled]="creatingDoctor()"
+              (click)="showDoctorForm.set(false)"
+            >
+              Cancel
+            </button>
+          </form>
+        </section>
+      }
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Staff</th>
+              <th>Point</th>
+              <th>Perform</th>
+              <th>Validate</th>
+              <th>Active</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (assignment of visibleAssignments(); track assignment.id) {
+              <tr>
+                <td>{{ staffName(assignment.userId) }}</td>
+                <td>{{ pointName(assignment.pointId) }}</td>
+                <td>{{ assignment.perform ? 'Yes' : 'No' }}</td>
+                <td>{{ assignment.verify ? 'Yes' : 'No' }}</td>
+                <td>{{ assignment.active ? 'Yes' : 'No' }}</td>
+                <td>
+                  <button
+                    mat-button
+                    [disabled]="busy() || creatingDoctor()"
+                    (click)="editAssignment(assignment)"
+                  >
+                    Edit
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6">No care point assignments recorded for this selection.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </mat-expansion-panel>
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title>Care points</mat-panel-title>
+      </mat-expansion-panel-header>
+      <p>
+        Examination and service points are separate from inpatient bed rooms. Existing point types
+        and departments are retained for history.
+      </p>
+      <form class="config-form" [formGroup]="pointForm" (ngSubmit)="save('points')">
+        <mat-form-field>
+          <mat-label>Code</mat-label>
+          <input matInput formControlName="code" maxlength="30" />
+          <mat-error>Use uppercase letters, digits, underscores or hyphens.</mat-error>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Name</mat-label>
+          <input matInput formControlName="name" maxlength="100" />
+          <mat-error>Name is required.</mat-error>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Type</mat-label>
+          <mat-select formControlName="kind">
+            @for (kind of ['CLINIC', 'SERVICE', 'WARD']; track kind) {
+              <mat-option [value]="kind">{{ label(kind) }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Department</mat-label>
+          <mat-select formControlName="departmentId">
+            @for (department of data.departments; track department.id) {
+              <mat-option [value]="department.id">{{ department.name }}</mat-option>
+            }
+          </mat-select>
+          <mat-error>Department is required.</mat-error>
+        </mat-form-field>
+        <mat-checkbox formControlName="active">Available for new work</mat-checkbox>
+        <button mat-flat-button type="submit" [disabled]="busy()">
+          {{ pointId() ? 'Save point' : 'Create point' }}
+        </button>
+        <button mat-button type="button" (click)="editPoint()">New point</button>
+      </form>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Available</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (point of data.points; track point.id) {
+              <tr>
+                <td>{{ point.code }}</td>
+                <td>{{ point.name }}</td>
+                <td>{{ label(point.kind) }}</td>
+                <td>{{ point.active ? 'Yes' : 'No' }}</td>
+                <td><button mat-button (click)="editPoint(point)">Edit</button></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </mat-expansion-panel>
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title>Service catalog</mat-panel-title>
+      </mat-expansion-panel-header>
+      <form class="config-form" [formGroup]="serviceForm" (ngSubmit)="save('services')">
+        <mat-form-field>
+          <mat-label>Code</mat-label>
+          <input matInput formControlName="code" maxlength="30" />
+          <mat-error>Use uppercase letters, digits, underscores or hyphens.</mat-error>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Name</mat-label>
+          <input matInput formControlName="name" maxlength="100" />
+          <mat-error>Name is required.</mat-error>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Performing point</mat-label>
+          <mat-select formControlName="pointId">
+            @for (point of servicePoints(); track point.id) {
+              <mat-option [value]="point.id">{{ point.name }}</mat-option>
+            }
+          </mat-select>
+          <mat-error>Select a service point.</mat-error>
+        </mat-form-field>
+        <mat-checkbox formControlName="active">Available for new orders</mat-checkbox>
+        <button mat-flat-button type="submit" [disabled]="busy()">
+          {{ serviceId() ? 'Save service' : 'Create service' }}
+        </button>
+        <button mat-button type="button" (click)="editService()">New service</button>
+      </form>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Service</th>
+              <th>Point</th>
+              <th>Available</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (service of data.services; track service.id) {
+              <tr>
+                <td>{{ service.code }}</td>
+                <td>{{ service.name }}</td>
+                <td>{{ pointName(service.pointId) }}</td>
+                <td>{{ service.active ? 'Yes' : 'No' }}</td>
+                <td><button mat-button (click)="editService(service)">Edit</button></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </mat-expansion-panel>
+  </mat-accordion>
+}

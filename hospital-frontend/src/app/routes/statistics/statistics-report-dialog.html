@@ -2,7 +2,9 @@
   <div class="a4-sheet">
     <header class="report-header">
       <h1>PATIENT STATISTICS REPORT</h1>
-      <p class="report-meta">No: {{ data.reportNo }} &nbsp;·&nbsp; Date: {{ data.generatedAt | date: 'dd/MM/yyyy' }}</p>
+      <p class="report-meta">
+        No: {{ data.reportNo }} &nbsp;·&nbsp; Date: {{ data.generatedAt | date: 'dd/MM/yyyy' }}
+      </p>
     </header>
 
     <p class="report-intro">{{ data.intro }}</p>
@@ -10,20 +12,48 @@
     @if (data.criteria.length > 0) {
       <ul class="report-lines">
         @for (c of data.criteria; track c.label) {
-          <li><span class="line-label">{{ c.label }}</span><span class="line-value">{{ c.value }}</span></li>
+          <li>
+            <span class="line-label">{{ c.label }}</span>
+            <span class="line-value">{{ c.value }}</span>
+          </li>
         }
       </ul>
     }
 
-    <p class="report-total"><span class="line-label">Total patients</span><span class="line-value">{{ data.total }}</span></p>
+    <section class="report-kpis" aria-label="Clinical activity summary">
+      <div>
+        <span>Patients</span>
+        <strong>{{ data.total }}</strong>
+      </div>
+      <div>
+        <span>Admissions</span>
+        <strong>{{ data.summary.admissions }}</strong>
+      </div>
+      <div>
+        <span>Diagnoses</span>
+        <strong>{{ data.summary.diagnoses }}</strong>
+      </div>
+      <div>
+        <span>Prescriptions</span>
+        <strong>{{ data.summary.prescriptions }}</strong>
+      </div>
+    </section>
 
     <table class="report-table">
       <thead>
-        <tr><th class="col-no">No.</th><th>Patient ID</th><th>Full name</th></tr>
+        <tr>
+          <th class="col-no">No.</th>
+          <th>Patient ID</th>
+          <th>Full name</th>
+        </tr>
       </thead>
       <tbody>
         @for (p of data.patients; track p.id; let i = $index) {
-          <tr><td class="col-no">{{ i + 1 }}</td><td>{{ p.id }}</td><td>{{ p.name }}</td></tr>
+          <tr>
+            <td class="col-no">{{ i + 1 }}</td>
+            <td>{{ p.id }}</td>
+            <td>{{ p.name }}</td>
+          </tr>
         } @empty {
           <tr><td colspan="3" class="empty-row">No patients matched the criteria.</td></tr>
         }

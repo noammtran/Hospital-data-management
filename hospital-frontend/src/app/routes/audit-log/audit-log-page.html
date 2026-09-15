@@ -1,0 +1,168 @@
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>Activity history</mat-card-title>
+    <mat-card-subtitle>
+      Review recorded business changes. Results update automatically.
+    </mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <form class="activity-filters" [formGroup]="filterForm">
+      <div class="filter-fields">
+        <mat-form-field class="search-field" subscriptSizing="dynamic">
+          <mat-label>Search activity</mat-label>
+          <input
+            matInput
+            formControlName="search"
+            maxlength="200"
+            placeholder="Actor, target, entity ID, or details"
+          />
+          @if (filterForm.controls.search.hasError('maxlength')) {
+            <mat-error>Search must be 200 characters or fewer.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field subscriptSizing="dynamic">
+          <mat-label>Performed by</mat-label>
+          <input
+            matInput
+            formControlName="actor"
+            maxlength="100"
+            placeholder="Username or full name"
+          />
+          @if (filterForm.controls.actor.hasError('maxlength')) {
+            <mat-error>Performed by must be 100 characters or fewer.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field subscriptSizing="dynamic">
+          <mat-label>Action</mat-label>
+          <mat-select formControlName="action">
+            <mat-option [value]="null">All actions</mat-option>
+            @for (action of actionOptions; track action) {
+              <mat-option [value]="action">{{ readableAuditCode(action) }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field subscriptSizing="dynamic">
+          <mat-label>Target type</mat-label>
+          <mat-select formControlName="entityType">
+            <mat-option [value]="null">All target types</mat-option>
+            @for (entityType of entityTypeOptions; track entityType) {
+              <mat-option [value]="entityType">{{ readableAuditCode(entityType) }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field subscriptSizing="dynamic">
+          <mat-label>From date</mat-label>
+          <input matInput type="date" formControlName="from" />
+        </mat-form-field>
+
+        <mat-form-field subscriptSizing="dynamic">
+          <mat-label>To date</mat-label>
+          <input matInput type="date" formControlName="to" />
+        </mat-form-field>
+
+        <div class="filter-actions">
+          <button mat-button type="button" class="compact-filter-action" (click)="clearFilters()">
+            Clear
+          </button>
+        </div>
+      </div>
+
+      @if (filterForm.hasError('dateRange')) {
+        <p class="filter-validation" role="alert">From date must be on or before To date.</p>
+      }
+    </form>
+
+    <div class="desktop-activity-grid">
+      @if (failed()) {
+        <p class="load-error" role="alert">
+          Activity could not be loaded. Check the filters and try again.
+        </p>
+      } @else {
+        <mtx-grid
+          [data]="items()"
+          [columns]="columns"
+          [length]="total()"
+          [loading]="loading()"
+          [pageOnFront]="false"
+          [pageIndex]="page - 1"
+          [pageSize]="size"
+          [pageSizeOptions]="[10, 20, 50]"
+          [showColumnMenuButton]="false"
+          [rowHover]="true"
+          noResultText="No activity recorded yet"
+          (page)="onPage($event)"
+        />
+      }
+    </div>
+
+    <div class="mobile-activity-list">
+      @if (failed()) {
+        <p class="mobile-state" role="alert">Activity could not be loaded.</p>
+      } @else if (loading()) {
+        <p class="mobile-state" role="status">Loading activity</p>
+      } @else if (items().length === 0) {
+        <p class="mobile-state">No activity recorded yet</p>
+      } @else {
+        @for (row of items(); track row.id) {
+          <article class="activity-card">
+            <div class="activity-card-heading">
+              <h3>{{ eventLabel(row) }}</h3>
+              <time [attr.datetime]="row.occurredAt">
+                {{ row.occurredAt | date: 'dd/MM/yyyy HH:mm:ss' }}
+              </time>
+            </div>
+
+            <dl class="activity-card-details">
+              <div>
+                <dt>Target</dt>
+                <dd>
+                  <span>{{ targetPrimary(row) }}</span>
+                  @if (targetSecondary(row); as secondary) {
+                    <small>{{ secondary }}</small>
+                  }
+                </dd>
+              </div>
+              <div>
+                <dt>Performed by</dt>
+                <dd>
+                  <span>{{ actorPrimary(row) }}</span>
+                  @if (actorSecondary(row); as secondary) {
+                    <small>{{ secondary }}</small>
+                  }
+                </dd>
+              </div>
+              <div>
+                <dt>Change summary</dt>
+                <dd>{{ changeSummary(row) }}</dd>
+              </div>
+            </dl>
+
+            <button
+              mat-stroked-button
+              type="button"
+              class="mobile-details-button"
+              [attr.aria-label]="'View details for event ' + row.id"
+              (click)="openDetails(row)"
+            >
+              View details
+            </button>
+          </article>
+        }
+      }
+
+      <mat-paginator
+        [length]="total()"
+        [pageIndex]="page - 1"
+        [pageSize]="size"
+        [pageSizeOptions]="[10, 20, 50]"
+        [showFirstLastButtons]="true"
+        aria-label="Select Activity history page"
+        (page)="onPage($event)"
+      />
+    </div>
+  </mat-card-content>
+</mat-card>

@@ -1,0 +1,325 @@
+<div class="navigation">
+  <a mat-button routerLink="/care">← Care workspace</a>
+  <button mat-button (click)="refresh()" [disabled]="busy()">Refresh</button>
+  @if (updatedAt()) {
+    <small>Updated {{ updatedAt() | date: 'HH:mm:ss' }}</small>
+  }
+</div>
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Loading care visit" />
+}
+@if (error()) {
+  <p class="error" role="alert">{{ error() }}</p>
+}
+@if (detail(); as data) {
+  <header class="visit-heading">
+    <div>
+      <small>
+        {{ data.visit.patientId }} · Registered
+        {{ data.visit.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+      </small>
+      <h1>{{ data.visit.patientName }}</h1>
+      <span class="badge">{{ patientStatus(data.visit.patientStatus) }}</span>
+      <span>{{ label(data.visit.progress) }}</span>
+    </div>
+    @if (canViewPatient) {
+      <button mat-stroked-button (click)="openRecord()">Patient record</button>
+    }
+  </header>
+  @if (data.visit.critical) {
+    <p class="critical" role="alert">
+      A critical result requires clinical review. Open the service result below and record your
+      assessment.
+    </p>
+  }
+  <section class="team-grid">
+    <div>
+      <small>Responsible doctor</small>
+      <strong>{{ data.visit.ownerName || 'Assigned when examination starts' }}</strong>
+      <span>{{ data.visit.pointName }}</span>
+    </div>
+    <div>
+      <small>Last confirmed location</small>
+      <strong>{{ data.visit.locationName || 'Presence not confirmed' }}</strong>
+      <span>Service orders do not confirm physical arrival.</span>
+    </div>
+    <div>
+      <small>Services</small>
+      <strong>{{ data.visit.publishedCount }} / {{ data.visit.orderCount }} returned</strong>
+      <span>{{ data.visit.unreadCount }} result(s) to review</span>
+    </div>
+  </section>
+  @if (data.complaint) {
+    <section class="panel">
+      <h2>Reason for visit</h2>
+      <p class="clinical-text">{{ data.complaint }}</p>
+    </section>
+  }
+  @if (profile(); as p) {
+    <section class="panel profile">
+      <div>
+        <strong>Allergies</strong>
+        <p>{{ p.allergies || 'No information recorded' }}</p>
+      </div>
+      <div>
+        <strong>Medical history</strong>
+        <p>{{ p.medicalHistory || 'No information recorded' }}</p>
+      </div>
+    </section>
+  }
+  @for (task of examTasks(); track task.id) {
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <h2>Examination / return to doctor</h2>
+          <p>{{ task.pointName }} · {{ label(task.status) }}</p>
+        </div>
+        <span class="badge">{{ label(task.arrival) }}</span>
+      </div>
+      <ng-container *ngTemplateOutlet="presenceActions; context: { $implicit: task }" />
+    </section>
+  }
+  <div class="action-bar" aria-label="Visit actions">
+    @if (canUpdateAdmission && data.visit.admissionId && data.actions.includes('DISCHARGE')) {
+      <button mat-stroked-button (click)="editInpatientStay()" [disabled]="busy()">
+        Update inpatient details / bed
+      </button>
+    }
+    @for (actionName of visitClinicalActions(data); track actionName) {
+      <button mat-stroked-button (click)="action(actionName)" [disabled]="busy() || !options()">
+        {{ visitActions[actionName] }}
+      </button>
+    }
+  </div>
+  <section class="panel">
+    <h2>Service requests and results</h2>
+    <p class="hint">
+      Each service retains its requesting doctor, receiving point and result revisions.
+    </p>
+    @if (!serviceTasks().length) {
+      <p>No services requested for this visit.</p>
+    }
+    <mat-accordion multi>
+      @for (task of serviceTasks(); track task.id) {
+        <mat-expansion-panel
+          [expanded]="task.actions.includes('ACKNOWLEDGE') || task.actions.includes('PUBLISH')"
+        >
+          <mat-expansion-panel-header>
+            <mat-panel-title>{{ task.serviceName }} · #{{ task.id }}</mat-panel-title>
+            <mat-panel-description>
+              {{ label(task.status) }} · {{ label(task.arrival) }}
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+          <p>
+            {{ task.pointName }} · Requested by {{ task.orderedBy }} at
+            {{ task.createdAt | date: 'dd/MM HH:mm' }}
+          </p>
+          @if (task.reason) {
+            <p class="clinical-text">
+              <strong>Indication:</strong>
+              {{ task.reason }}
+            </p>
+          }
+          @if (task.performedBy) {
+            <p>Performed by {{ task.performedBy }} · {{ task.startedAt | date: 'dd/MM HH:mm' }}</p>
+          }
+          @if (task.resolution) {
+            <p class="clinical-text">
+              <strong>Unable to perform / cancellation:</strong>
+              {{ task.resolution
+              }}{{
+                task.resolvedAt
+                  ? ' · Resolved by the requesting team'
+                  : ' · Awaiting requesting team review'
+              }}
+            </p>
+          }
+          <ng-container *ngTemplateOutlet="presenceActions; context: { $implicit: task }" />
+          @for (result of task.results; track result.id) {
+            <article
+              class="result"
+              [class.critical]="
+                result.critical && !result.readAt && !isSuperseded(task, result.revision)
+              "
+            >
+              <strong>
+                Revision {{ result.revision }} ·
+                {{
+                  result.publishedAt
+                    ? isSuperseded(task, result.revision)
+                      ? 'Superseded'
+                      : 'Published'
+                    : 'Draft · not yet returned'
+                }}{{ result.critical ? ' · Critical' : '' }}
+              </strong>
+              <p class="clinical-text">{{ result.body }}</p>
+              @if (result.correctionReason) {
+                <p class="clinical-text">Correction reason: {{ result.correctionReason }}</p>
+              }
+              <small>
+                Recorded by {{ result.createdBy }} · {{ result.createdAt | date: 'dd/MM HH:mm' }}
+              </small>
+              @if (result.publishedAt) {
+                <small>
+                  Validated by {{ result.publishedBy }} ·
+                  {{ result.publishedAt | date: 'dd/MM HH:mm' }}
+                </small>
+              }
+              @if (result.readAt) {
+                <small>
+                  Reviewed by {{ result.readBy }} · {{ result.readAt | date: 'dd/MM HH:mm' }}
+                </small>
+              }
+            </article>
+          }
+          <div class="action-bar">
+            @for (actionName of taskClinicalActions(task); track actionName) {
+              <button
+                mat-stroked-button
+                [disabled]="busy() || !options()"
+                (click)="action(actionName, task)"
+              >
+                {{ taskActions[actionName] }}
+              </button>
+            }
+          </div>
+          @if (taskExceptionActions(task).length) {
+            <div class="action-bar" aria-label="Service request changes">
+              @for (actionName of taskExceptionActions(task); track actionName) {
+                <button
+                  mat-button
+                  [disabled]="busy() || !options()"
+                  (click)="action(actionName, task)"
+                >
+                  {{ taskActions[actionName] }}
+                </button>
+              }
+            </div>
+          }
+        </mat-expansion-panel>
+      }
+    </mat-accordion>
+  </section>
+  @if (data.handoffs.length) {
+    <section class="panel">
+      <h2>Doctor handoffs and consultations</h2>
+      @for (handoff of data.handoffs; track handoff.id) {
+        <article class="entry">
+          <strong>{{ label(handoff.kind) }} · {{ label(handoff.status) }}</strong>
+          <p>{{ handoff.fromUser }} → {{ handoff.toUser }} · {{ handoff.pointName }}</p>
+          <p class="clinical-text">{{ handoff.reason }}</p>
+          @if (handoff.response) {
+            <p class="clinical-text">{{ handoff.response }}</p>
+          }
+          <div class="action-bar">
+            @if (handoff.canRespond) {
+              <button
+                mat-flat-button
+                (click)="action('RESPOND', undefined, handoff)"
+                [disabled]="!options() || busy()"
+              >
+                Respond
+              </button>
+            }
+            @if (handoff.status === 'PENDING' && data.actions.includes('HANDOFF')) {
+              <button
+                mat-button
+                (click)="action('CANCEL_HANDOFF', undefined, handoff)"
+                [disabled]="!options() || busy()"
+              >
+                Withdraw request
+              </button>
+            }
+          </div>
+        </article>
+      }
+    </section>
+  }
+  @if (data.diagnoses.length) {
+    <section class="panel">
+      <h2>Diagnoses and prescriptions</h2>
+      @for (diagnosis of data.diagnoses; track diagnosis.id) {
+        <article class="entry">
+          <strong>{{ diagnosis.icdCode }} {{ diagnosis.description }}</strong>
+          <small>{{ diagnosis.doctor }}</small>
+          @for (rx of diagnosis.prescriptions; track rx.id) {
+            <p class="clinical-text">
+              <strong>{{ rx.medicineName }}</strong>
+              · {{ rx.dosage }} · {{ rx.frequency }} · {{ rx.duration }}
+              <br />
+              {{ rx.instructions }}
+            </p>
+          }
+        </article>
+      }
+    </section>
+  }
+  @if (data.conclusion || data.followupPlan) {
+    <section class="panel">
+      <h2>Conclusion and follow-up</h2>
+      <p class="clinical-text">{{ data.conclusion }}</p>
+      <p class="clinical-text">{{ data.plan }}</p>
+      @if (data.outcome) {
+        <p>Disposition: {{ label(data.outcome) }}</p>
+      }
+      @if (data.followupPlan) {
+        <p class="clinical-text">
+          <strong>Follow-up plan:</strong>
+          {{ data.followupPlan }}
+        </p>
+        <p>
+          Responsible: {{ data.followupOwner }} · Due
+          {{ data.followupAt | date: 'dd/MM/yyyy HH:mm' }}
+        </p>
+      }
+      @if (data.visit.closedAt) {
+        <small>Visit closed {{ data.visit.closedAt | date: 'dd/MM/yyyy HH:mm' }}</small>
+      }
+    </section>
+  }
+  @if (data.notes.length) {
+    <section class="panel">
+      <h2>Care notes</h2>
+      @for (note of data.notes; track note.id) {
+        <article class="entry">
+          <strong>{{ label(note.kind) }}</strong>
+          <small>{{ note.createdBy }} · {{ note.createdAt | date: 'dd/MM/yyyy HH:mm' }}</small>
+          <p class="clinical-text">{{ note.body }}</p>
+        </article>
+      }
+    </section>
+  }
+  @if (visitExceptionActions(data).length) {
+    <div class="action-bar" aria-label="Visit coordination actions">
+      @for (actionName of visitExceptionActions(data); track actionName) {
+        <button mat-button (click)="action(actionName)" [disabled]="busy() || !options()">
+          {{ visitActions[actionName] }}
+        </button>
+      }
+    </div>
+  }
+}
+
+<ng-template #presenceActions let-task>
+  @if (taskStepHint(task); as hint) {
+    <p class="hint" role="status">{{ hint }}</p>
+  }
+  <div class="action-bar" aria-label="Room workflow actions">
+    @for (state of arrivalChoices(task); track state) {
+      <button mat-stroked-button [disabled]="busy()" (click)="direct('arrival', task, state)">
+        {{ arrivalLabels[state] }}
+      </button>
+    }
+    @if (canStartTask(task)) {
+      <button mat-flat-button [disabled]="busy()" (click)="direct('start', task)">
+        {{
+          task.kind === 'ORDER'
+            ? 'Start service'
+            : detail()?.visit?.ownerId
+              ? 'Resume examination'
+              : 'Start examination'
+        }}
+      </button>
+    }
+  </div>
+</ng-template>

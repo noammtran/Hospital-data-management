@@ -9,10 +9,19 @@ import com.usth.hospital.dto.response.PatientListResponse;
 import com.usth.hospital.exception.DuplicateFieldException;
 import com.usth.hospital.exception.PatientNotFoundException;
 import com.usth.hospital.mapper.PatientMapper;
+import com.usth.hospital.model.AuditLogAction;
+import com.usth.hospital.model.AuditLogEntityType;
+import com.usth.hospital.model.AuditLogValueType;
 import com.usth.hospital.model.PatientEntity;
 import com.usth.hospital.model.PatientHistoryEntity;
+import com.usth.hospital.repository.AdmissionRepository;
 import com.usth.hospital.repository.PatientHistoryRepository;
 import com.usth.hospital.repository.PatientRepository;
+import com.usth.hospital.security.CurrentUserProvider;
+import com.usth.hospital.service.AuditLogService;
+import com.usth.hospital.service.AuditEventCommand;
+import com.usth.hospital.service.AuditLogChange;
+import com.usth.hospital.service.AuditLogTarget;
 import com.usth.hospital.service.PatientIdGenerator;
 import com.usth.hospital.service.PatientService;
 import java.time.LocalDate;
@@ -36,13 +45,25 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class PatientServiceImpl implements PatientService {
 
-    private static final String SYSTEM_USER = "SYSTEM";
     private static final int VALUE_MAX_LENGTH = 255;
+    private static final Set<String> PERSONAL_AUDIT_FIELDS = Set.of(
+            "birthDate", "gender", "address", "phoneNo", "email", "identityNo", "insuranceNo",
+            "insuranceExpiry",
+            "emergencyContactName", "emergencyContactPhone", "emergencyContactRelation"
+    );
+    private static final Set<String> MEDICAL_AUDIT_FIELDS = Set.of(
+            "bloodType", "allergies", "medicalHistory", "note"
+    );
 
     private final PatientRepository patientRepository;
+    private final AdmissionRepository admissionRepository;
     private final PatientHistoryRepository patientHistoryRepository;
     private final PatientMapper patientMapper;
     private final PatientIdGenerator patientIdGenerator;
+    private final CurrentUserProvider currentUserProvider;
+    private final AuditLogService auditLogService;
+    private final PatientStatusTransitionService patientStatusTransitionService;
+    private final PatientAccountLifecycleService patientAccountLifecycleService;
 
     @Override
     @Transactional(readOnly = true)
@@ -70,13 +91,25 @@ public class PatientServiceImpl implements PatientService {
     public PatientDetailResponse create(CreatePatientRequest request) {
         requireUniqueIdentity(request.identityNo(), null);
         PatientEntity entity = patientMapper.toEntity(request);
+        entity.setIdentityNo(request.identityNo().trim());
         LocalDate now = LocalDate.now();
+        String actor = currentUserProvider.username();
         entity.setId(nextPatientId(now.getYear()));
-        entity.setCreatedBy(SYSTEM_USER);
+        entity.setCreatedBy(actor);
         entity.setCreatedDate(now);
-        entity.setLastUpdatedBy(SYSTEM_USER);
+        entity.setLastUpdatedBy(actor);
         entity.setLastUpdatedDate(now);
         PatientEntity saved = patientRepository.save(entity);
+        patientAccountLifecycleService.createFor(saved);
+        List<AuditLogChange> changes = patientChanges(Map.of(), snapshot(saved));
+        auditLogService.record(AuditEventCommand.builder()
+                .action(AuditLogAction.CREATE)
+                .entityType(AuditLogEntityType.PATIENT)
+                .entityId(saved.getId())
+                .targetLabel(patientLabel(saved))
+                .summary("Record created")
+                .changes(changes)
+                .build());
         return patientMapper.toDetail(saved);
     }
 
@@ -87,25 +120,88 @@ public class PatientServiceImpl implements PatientService {
         requireUniqueIdentity(request.identityNo(), id);
         Map<String, String> before = snapshot(entity);
         patientMapper.updateEntity(request, entity);
+        entity.setIdentityNo(normalizeIdentity(request.identityNo()));
         LocalDate now = LocalDate.now();
-        entity.setLastUpdatedBy(SYSTEM_USER);
+        String actor = currentUserProvider.username();
+        entity.setLastUpdatedBy(actor);
         entity.setLastUpdatedDate(now);
         PatientEntity saved = patientRepository.save(entity);
-        recordHistory(id, before, snapshot(saved), now);
+        patientAccountLifecycleService.synchronize(saved);
+        recordHistory(id, before, snapshot(saved), actor, now);
+        Map<String, String> after = snapshot(saved);
+        List<AuditLogChange> changes = patientChanges(before, after);
+        auditLogService.record(AuditEventCommand.builder()
+                .action(AuditLogAction.UPDATE)
+                .entityType(AuditLogEntityType.PATIENT)
+                .entityId(saved.getId())
+                .targetLabel(patientLabel(saved))
+                .summary(changeSummary(changes.size()))
+                .changes(changes)
+                .build());
         return patientMapper.toDetail(saved);
     }
 
     @Override
+    public PatientDetailResponse checkIn(String id) {
+        return patientStatusTransitionService.checkIn(id);
+    }
+
+    @Override
+    public PatientDetailResponse startExamination(String id) {
+        return patientStatusTransitionService.startExamination(id);
+    }
+
+    @Override
+    public PatientDetailResponse completeExamination(String id) {
+        return patientStatusTransitionService.completeExamination(id);
+    }
+
+    @Override
     public void delete(String id) {
-        if (!patientRepository.existsById(id)) {
-            throw new PatientNotFoundException(id);
-        }
+        PatientEntity patient = patientRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new PatientNotFoundException(id));
+        Map<String, String> before = snapshot(patient);
+        releaseActiveAdmissionRooms(List.of(id));
+        patientAccountLifecycleService.deleteFor(id);
         patientRepository.deleteById(id);
+        List<AuditLogChange> changes = patientChanges(before, Map.of());
+        auditLogService.record(AuditEventCommand.builder()
+                .action(AuditLogAction.DELETE)
+                .entityType(AuditLogEntityType.PATIENT)
+                .entityId(id)
+                .targetLabel(patientLabel(patient))
+                .summary("Permanently deleted")
+                .changes(changes)
+                .build());
     }
 
     @Override
     public void bulkDelete(List<String> ids) {
-        patientRepository.deleteAllById(ids);
+        List<String> orderedIds = ids.stream().distinct().sorted().toList();
+        List<PatientEntity> patients = orderedIds.stream()
+                .map(patientRepository::findByIdForUpdate)
+                .flatMap(java.util.Optional::stream)
+                .toList();
+        releaseActiveAdmissionRooms(orderedIds);
+        patientAccountLifecycleService.deleteFor(orderedIds);
+        patientRepository.deleteAllById(orderedIds);
+        List<AuditLogTarget> targets = new ArrayList<>();
+        for (int index = 0; index < patients.size(); index++) {
+            PatientEntity patient = patients.get(index);
+            targets.add(new AuditLogTarget(
+                    AuditLogEntityType.PATIENT,
+                    patient.getId(),
+                    patientLabel(patient),
+                    index
+            ));
+        }
+        auditLogService.record(AuditEventCommand.builder()
+                .action(AuditLogAction.BULK_DELETE)
+                .entityType(AuditLogEntityType.PATIENT)
+                .targetLabel(patients.size() + " patients")
+                .summary(patients.size() + " records deleted")
+                .affectedTargets(targets)
+                .build());
     }
 
     @Override
@@ -139,6 +235,11 @@ public class PatientServiceImpl implements PatientService {
         return patientIdGenerator.generate(year, next);
     }
 
+    private void releaseActiveAdmissionRooms(List<String> patientIds) {
+        admissionRepository.findActiveRoomIdsByPatientIds(patientIds)
+                .forEach(admissionRepository::releaseRoom);
+    }
+
     private void requireUniqueIdentity(String identityNo, String currentId) {
         if (identityNo == null || identityNo.isBlank()) {
             return;
@@ -151,8 +252,12 @@ public class PatientServiceImpl implements PatientService {
         }
     }
 
+    private static String normalizeIdentity(String identityNo) {
+        return identityNo == null || identityNo.isBlank() ? null : identityNo.trim();
+    }
+
     private void recordHistory(String patientId, Map<String, String> before,
-                               Map<String, String> after, LocalDate changedDate) {
+                               Map<String, String> after, String changedBy, LocalDate changedDate) {
         List<PatientHistoryEntity> rows = new ArrayList<>();
         for (Map.Entry<String, String> field : before.entrySet()) {
             String oldValue = field.getValue();
@@ -164,7 +269,7 @@ public class PatientServiceImpl implements PatientService {
                         .fieldName(field.getKey())
                         .oldValue(oldValue)
                         .newValue(newValue)
-                        .changedBy(SYSTEM_USER)
+                        .changedBy(changedBy)
                         .changedDate(changedDate)
                         .build());
             }
@@ -194,6 +299,114 @@ public class PatientServiceImpl implements PatientService {
         values.put("status", str(e.getStatus()));
         values.put("note", str(e.getNote()));
         return values;
+    }
+
+    private static List<AuditLogChange> patientChanges(
+            Map<String, String> before,
+            Map<String, String> after
+    ) {
+        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+        snapshotKeys().forEach(key -> fields.put(key, null));
+        List<AuditLogChange> changes = new ArrayList<>();
+        int displayOrder = 0;
+        for (String fieldKey : fields.keySet()) {
+            String oldValue = before.get(fieldKey);
+            String newValue = after.get(fieldKey);
+            if (Objects.equals(oldValue, newValue)) {
+                displayOrder++;
+                continue;
+            }
+            AuditLogValueType valueType = patientValueType(fieldKey);
+            if (MEDICAL_AUDIT_FIELDS.contains(fieldKey)) {
+                changes.add(AuditLogChange.medical(
+                        fieldKey, valueType, oldValue, newValue, displayOrder));
+            } else if (PERSONAL_AUDIT_FIELDS.contains(fieldKey)) {
+                changes.add(AuditLogChange.personal(
+                        fieldKey, valueType, oldValue, newValue, displayOrder));
+            } else if (valueType == AuditLogValueType.REFERENCE) {
+                changes.add(AuditLogChange.generalReference(
+                        fieldKey,
+                        valueType,
+                        oldValue,
+                        newValue,
+                        patientDisplayValue(fieldKey, oldValue),
+                        patientDisplayValue(fieldKey, newValue),
+                        displayOrder
+                ));
+            } else {
+                changes.add(AuditLogChange.general(
+                        fieldKey, valueType, oldValue, newValue, displayOrder));
+            }
+            displayOrder++;
+        }
+        return changes;
+    }
+
+    private static List<String> snapshotKeys() {
+        return List.of(
+                "name", "birthDate", "gender", "address", "phoneNo", "email", "identityNo",
+                "bloodType", "allergies", "medicalHistory", "insuranceNo", "insuranceExpiry",
+                "emergencyContactName", "emergencyContactPhone", "emergencyContactRelation",
+                "status", "note"
+        );
+    }
+
+    private static AuditLogValueType patientValueType(String fieldKey) {
+        return switch (fieldKey) {
+            case "birthDate", "insuranceExpiry" -> AuditLogValueType.DATE;
+            case "gender", "bloodType", "status" -> AuditLogValueType.REFERENCE;
+            default -> AuditLogValueType.TEXT;
+        };
+    }
+
+    private static String patientDisplayValue(String fieldKey, String value) {
+        if (value == null) {
+            return null;
+        }
+        int code;
+        try {
+            code = Integer.parseInt(value);
+        } catch (NumberFormatException ignored) {
+            return value;
+        }
+        return switch (fieldKey) {
+            case "gender" -> switch (code) {
+                case 1 -> "Male";
+                case 2 -> "Female";
+                case 3 -> "Other";
+                default -> value;
+            };
+            case "bloodType" -> switch (code) {
+                case 1 -> "A+";
+                case 2 -> "A-";
+                case 3 -> "B+";
+                case 4 -> "B-";
+                case 5 -> "AB+";
+                case 6 -> "AB-";
+                case 7 -> "O+";
+                case 8 -> "O-";
+                default -> value;
+            };
+            case "status" -> switch (code) {
+                case 0 -> "Waiting";
+                case 1 -> "Examining";
+                case 2 -> "Admitted";
+                case 3 -> "Discharged";
+                default -> value;
+            };
+            default -> value;
+        };
+    }
+
+    private static String patientLabel(PatientEntity patient) {
+        return patient.getName() + " · " + patient.getId();
+    }
+
+    private static String changeSummary(int count) {
+        if (count == 0) {
+            return "No field changes";
+        }
+        return count + (count == 1 ? " field changed" : " fields changed");
     }
 
     private static String str(Object value) {

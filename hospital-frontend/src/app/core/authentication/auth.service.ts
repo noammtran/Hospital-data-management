@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, catchError, iif, map, merge, of, share, switchMap, tap } from 'rxjs';
-import { filterObject, isEmptyObject } from './helpers';
-import { User } from './interface';
+import { Observable, ReplaySubject, catchError, iif, map, of, switchMap, tap, throwError } from 'rxjs';
+import { AppPermission, User, UserRole } from './interface';
 import { LoginService } from './login.service';
 import { TokenService } from './token.service';
 
@@ -12,21 +11,15 @@ export class AuthService {
   private readonly loginService = inject(LoginService);
   private readonly tokenService = inject(TokenService);
 
-  private user$ = new BehaviorSubject<User>({});
-  private change$ = merge(
-    this.tokenService.change(),
-    this.tokenService.refresh().pipe(switchMap(() => this.refresh()))
-  ).pipe(
-    switchMap(() => this.assignUser()),
-    share()
-  );
+  private readonly user$ = new ReplaySubject<User>(1);
+  private currentUser: User = {};
 
   init() {
-    return new Promise<void>(resolve => this.change$.subscribe(() => resolve()));
+    return new Promise<void>(resolve => this.restore().subscribe(() => resolve()));
   }
 
   change() {
-    return this.change$;
+    return this.user$.asObservable();
   }
 
   check() {
@@ -36,44 +29,84 @@ export class AuthService {
   login(username: string, password: string, rememberMe = false) {
     return this.loginService.login(username, password, rememberMe).pipe(
       tap(token => this.tokenService.set(token)),
-      map(() => this.check())
+      switchMap(() => this.loginService.user()),
+      tap(user => this.publishUser(user)),
+      map(() => this.check()),
+      catchError(error => {
+        this.clearSession();
+        return throwError(() => error);
+      })
     );
   }
 
-  refresh() {
-    return this.loginService
-      .refresh(filterObject({ refresh_token: this.tokenService.getRefreshToken() }))
-      .pipe(
-        catchError(() => of(undefined)),
-        tap(token => this.tokenService.set(token)),
-        map(() => this.check())
-      );
+  restore(): Observable<User> {
+    if (!this.check()) {
+      const user: User = {};
+      this.publishUser(user);
+      return of(user);
+    }
+
+    return this.loginService.user().pipe(
+      tap(user => this.publishUser(user)),
+      catchError(() => {
+        this.clearSession();
+        return of<User>({});
+      })
+    );
   }
 
   logout() {
     return this.loginService.logout().pipe(
-      tap(() => this.tokenService.clear()),
+      tap(() => this.clearSession()),
       map(() => !this.check())
     );
   }
 
   user() {
-    return this.user$.pipe(share());
+    return this.user$.asObservable();
   }
 
   menu() {
     return iif(() => this.check(), this.loginService.menu(), of([]));
   }
 
-  private assignUser() {
-    if (!this.check()) {
-      return of({}).pipe(tap(user => this.user$.next(user)));
-    }
+  hasPermission(permission: AppPermission): boolean {
+    return this.currentUser.permissions?.includes(permission) ?? false;
+  }
 
-    if (!isEmptyObject(this.user$.getValue())) {
-      return of(this.user$.getValue());
-    }
+  hasAnyPermission(permissions: AppPermission[]): boolean {
+    return permissions.some(permission => this.hasPermission(permission));
+  }
 
-    return this.loginService.user().pipe(tap(user => this.user$.next(user)));
+  hasRole(role: UserRole): boolean {
+    return this.currentUser.roles?.includes(role) ?? false;
+  }
+
+  mustChangePassword(): boolean {
+    return this.currentUser.mustChangePassword === true;
+  }
+
+  landingPath(): string {
+    if (this.mustChangePassword()) {
+      return '/auth/change-password';
+    }
+    if (this.hasPermission('VIEW_OWN_RECORD')) return '/my-record';
+    return this.hasPermission('CARE_VIEW') ? '/care' : '/patients';
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.loginService.changePassword(currentPassword, newPassword).pipe(
+      tap(() => this.clearSession())
+    );
+  }
+
+  private publishUser(user: User): void {
+    this.currentUser = user;
+    this.user$.next(user);
+  }
+
+  private clearSession(): void {
+    this.tokenService.clear();
+    this.publishUser({});
   }
 }

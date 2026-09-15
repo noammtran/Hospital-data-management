@@ -3,10 +3,15 @@
 .matero-user-panel {
   display: flex;
   align-items: center;
+  width: 100%;
   padding: 0.75rem;
+  border: 0;
   margin-bottom: 0.75rem;
   cursor: pointer;
   outline: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   background-color: var(--user-panel-background-color);
   border-radius: 0.75rem;
 

@@ -1,106 +1,201 @@
 <div class="stats-page">
-  <mat-card class="m-b-16">
+  <header class="stats-heading">
+    <div>
+      <h1>Clinical statistics</h1>
+      <p>Review a patient cohort, its clinical activity, and demographic profile.</p>
+    </div>
+    @if (result()) {
+      <button mat-stroked-button type="button" (click)="openReport()">
+        <mat-icon>description</mat-icon>
+        View report
+      </button>
+    }
+  </header>
+
+  <mat-card class="filter-card">
     <mat-card-content>
-      <div class="filter-toolbar">
-        <button
-          mat-stroked-button
-          type="button"
-          [matMenuTriggerFor]="addMenu"
-          [disabled]="availableFilters().length === 0"
-        >
-          <mat-icon>add</mat-icon>
-          Add filter
-        </button>
-        <mat-menu #addMenu="matMenu">
-          @for (def of availableFilters(); track def.key) {
-            <button mat-menu-item type="button" (click)="addFilter(def.key)">{{ def.label }}</button>
-          }
-        </mat-menu>
-
-        <span class="spacer"></span>
-
-        <button mat-flat-button color="primary" type="button" (click)="applyFilter()">
-          <mat-icon>filter_list</mat-icon>
-          Apply filter
-        </button>
-        <button
-          mat-button
-          type="button"
-          [disabled]="activeFilters().length === 0"
-          (click)="clearFilter()"
-        >
-          Clear
-        </button>
-      </div>
-
-      <form [formGroup]="filterForm" class="filter-rows">
-        @if (activeFilters().includes('dates')) {
-          <div class="filter-row">
-            <span class="filter-row-label">Date range</span>
-            <mat-form-field class="date-field" subscriptSizing="dynamic">
-              <mat-label>From</mat-label>
-              <input matInput [matDatepicker]="fromPicker" [max]="today" formControlName="from" />
-              <mat-datepicker-toggle matIconSuffix [for]="fromPicker" />
-              <mat-datepicker #fromPicker />
-            </mat-form-field>
-            <mat-form-field class="date-field" subscriptSizing="dynamic">
-              <mat-label>To</mat-label>
-              <input matInput [matDatepicker]="toPicker" [max]="today" formControlName="to" />
-              <mat-datepicker-toggle matIconSuffix [for]="toPicker" />
-              <mat-datepicker #toPicker />
-            </mat-form-field>
-            <button mat-icon-button type="button" (click)="removeFilter('dates')">
-              <mat-icon>close</mat-icon>
+      <form [formGroup]="filterForm">
+        <div class="filter-heading">
+          <div>
+            <h2>Reporting scope</h2>
+            <p>Results update automatically. Dates must be supplied as a complete range.</p>
+          </div>
+          <div class="filter-actions">
+            <button mat-button type="button" class="compact-filter-action" (click)="resetFilters()">
+              Reset
             </button>
           </div>
-        }
+        </div>
 
-        @if (activeFilters().includes('disease')) {
-          <div class="filter-row">
-            <span class="filter-row-label">Disease (ICD-10)</span>
-            <mat-form-field class="value-field" subscriptSizing="dynamic">
-              <mat-label>Diagnosis</mat-label>
-              <mat-select formControlName="icdCode">
-                @for (opt of diagnosisOptions(); track opt.icdCode) {
-                  <mat-option [value]="opt.icdCode">{{ opt.label }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-            <button mat-icon-button type="button" (click)="removeFilter('disease')">
-              <mat-icon>close</mat-icon>
-            </button>
-          </div>
-        }
+        <div class="filter-grid">
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>From</mat-label>
+            <input matInput [matDatepicker]="fromPicker" [max]="today" formControlName="from" />
+            <mat-datepicker-toggle matIconSuffix [for]="fromPicker" />
+            <mat-datepicker #fromPicker />
+          </mat-form-field>
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>To</mat-label>
+            <input matInput [matDatepicker]="toPicker" [max]="today" formControlName="to" />
+            <mat-datepicker-toggle matIconSuffix [for]="toPicker" />
+            <mat-datepicker #toPicker />
+          </mat-form-field>
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>Diagnosis (ICD-10)</mat-label>
+            <mat-select formControlName="icdCode">
+              <mat-option [value]="null">All diagnoses</mat-option>
+              @for (opt of diagnosisOptions(); track opt.icdCode) {
+                <mat-option [value]="opt.icdCode">{{ opt.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>Medicine</mat-label>
+            <mat-select formControlName="medicineId">
+              <mat-option [value]="null">All medicines</mat-option>
+              @for (opt of medicineOptions(); track opt.medicineId) {
+                <mat-option [value]="opt.medicineId">{{ opt.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
 
-        @if (activeFilters().includes('medicine')) {
-          <div class="filter-row">
-            <span class="filter-row-label">Medicine</span>
-            <mat-form-field class="value-field" subscriptSizing="dynamic">
-              <mat-label>Medicine</mat-label>
-              <mat-select formControlName="medicineId">
-                @for (opt of medicineOptions(); track opt.medicineId) {
-                  <mat-option [value]="opt.medicineId">{{ opt.label }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-            <button mat-icon-button type="button" (click)="removeFilter('medicine')">
-              <mat-icon>close</mat-icon>
-            </button>
-          </div>
+        @if (dateRangeError()) {
+          <p class="filter-error" role="alert">{{ dateRangeError() }}</p>
         }
       </form>
     </mat-card-content>
+    @if (loading()) {
+      <mat-progress-bar mode="indeterminate" aria-label="Loading statistics" />
+    }
   </mat-card>
 
+  @if (errorMessage()) {
+    <div class="error-state" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <div>
+        <strong>Unable to load statistics</strong>
+        <span>{{ errorMessage() }}</span>
+      </div>
+    </div>
+  }
+
   @if (result(); as r) {
-    <mat-card>
+    <p class="dashboard-scope">{{ appliedIntro() }}</p>
+
+    <section class="metric-grid" aria-label="Clinical activity summary">
+      <article class="metric-card">
+        <div class="metric-icon"><mat-icon>groups</mat-icon></div>
+        <div>
+          <span>Patients</span>
+          <strong>{{ r.total }}</strong>
+        </div>
+      </article>
+      <article class="metric-card">
+        <div class="metric-icon"><mat-icon>local_hospital</mat-icon></div>
+        <div>
+          <span>Admissions</span>
+          <strong>{{ r.summary.admissions }}</strong>
+        </div>
+      </article>
+      <article class="metric-card">
+        <div class="metric-icon"><mat-icon>healing</mat-icon></div>
+        <div>
+          <span>Diagnoses</span>
+          <strong>{{ r.summary.diagnoses }}</strong>
+        </div>
+      </article>
+      <article class="metric-card">
+        <div class="metric-icon"><mat-icon>local_pharmacy</mat-icon></div>
+        <div>
+          <span>Prescriptions</span>
+          <strong>{{ r.summary.prescriptions }}</strong>
+        </div>
+      </article>
+    </section>
+
+    <section class="analysis-grid">
+      <mat-card class="analysis-card">
+        <mat-card-content>
+          <div class="card-title-row">
+            <div>
+              <h2>Patient status</h2>
+              <p>{{ activeCare() }} patients in active care</p>
+            </div>
+          </div>
+          <div class="breakdown-list">
+            @for (item of r.summary.patientStatuses; track item.key) {
+              <div class="breakdown-row">
+                <div class="breakdown-label">
+                  <span>{{ item.label }}</span>
+                  <strong>
+                    {{ item.count }}
+                    <small>{{ percentage(item, r.total) }}%</small>
+                  </strong>
+                </div>
+                <div class="bar-track" aria-hidden="true">
+                  <span [style.width.%]="percentage(item, r.total)"></span>
+                </div>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="analysis-card">
+        <mat-card-content>
+          <div class="card-title-row">
+            <div>
+              <h2>Demographic profile</h2>
+              <p>Age and gender within the current cohort</p>
+            </div>
+          </div>
+          <div class="demographic-columns">
+            <div>
+              <h3>Age groups</h3>
+              <div class="breakdown-list compact">
+                @for (item of r.summary.ageGroups; track item.key) {
+                  <div class="breakdown-row">
+                    <div class="breakdown-label">
+                      <span>{{ item.label }}</span>
+                      <strong>{{ item.count }}</strong>
+                    </div>
+                    <div class="bar-track" aria-hidden="true">
+                      <span [style.width.%]="percentage(item, r.total)"></span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+            <div>
+              <h3>Gender</h3>
+              <div class="breakdown-list compact">
+                @for (item of r.summary.genders; track item.key) {
+                  <div class="breakdown-row">
+                    <div class="breakdown-label">
+                      <span>{{ item.label }}</span>
+                      <strong>{{ item.count }}</strong>
+                    </div>
+                    <div class="bar-track" aria-hidden="true">
+                      <span [style.width.%]="percentage(item, r.total)"></span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+    <mat-card class="patient-card">
       <mat-card-content>
-        <div class="result-header">
-          <p class="result-count">{{ r.total }} patient(s)</p>
-          <button mat-stroked-button type="button" (click)="openReport()">
-            <mat-icon>description</mat-icon>
-            View as report
-          </button>
+        <div class="patient-list-heading">
+          <div>
+            <h2>Matching patients</h2>
+            <p>Open a record for the complete treatment history.</p>
+          </div>
+          <span>{{ r.total }} total</span>
         </div>
         <mtx-grid
           [data]="r.patients"
@@ -111,7 +206,7 @@
           [pageSizeOptions]="[10, 20, 50]"
           [showColumnMenuButton]="false"
           [rowHover]="true"
-          [noResultText]="'No patients found'"
+          [noResultText]="'No patients match the current filters'"
         />
       </mat-card-content>
     </mat-card>

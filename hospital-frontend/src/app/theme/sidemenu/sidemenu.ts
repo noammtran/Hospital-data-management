@@ -2,6 +2,7 @@ import { AsyncPipe, NgTemplateOutlet, SlicePipe } from '@angular/common';
 import { Component, ViewEncapsulation, inject } from '@angular/core';
 import { MatRippleModule } from '@angular/material/core';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { NgxPermissionsModule } from 'ngx-permissions';
@@ -24,6 +25,7 @@ import { NavAccordionToggle } from './nav-accordion-toggle';
     RouterLinkActive,
     NgxPermissionsModule,
     MatIconModule,
+    MatTooltipModule,
     MatRippleModule,
     TranslateModule,
     NavAccordion,

@@ -1,3 +1,19 @@
+@use '@angular/material' as mat;
+
+:host {
+  @include mat.form-field-density(-5);
+
+  display: block;
+}
+
+.patient-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(280px, 2fr) minmax(130px, 0.75fr) minmax(130px, 0.75fr) auto;
+  gap: 10px;
+  align-items: start;
+  margin-bottom: 12px;
+}
+
 // Rectangular buttons with slightly rounded corners (override the pill shape).
 .patient-actions button {
   border-radius: 6px;
@@ -9,8 +25,8 @@
   --mdc-filled-button-container-color: var(--mat-sys-error);
   --mdc-filled-button-label-text-color: #fff;
 
-  background-color: var(--mat-sys-error);
   color: #fff;
+  background-color: var(--mat-sys-error);
 
   .mat-icon {
     color: #fff;
@@ -19,10 +35,54 @@
 
 // "Search by" field selector embedded at the start of the search box.
 .search-by-btn {
+  --mdc-text-button-container-height: 32px;
+
   min-width: auto;
-  padding: 0 8px;
-  margin-right: 8px;
-  border-radius: 0;
-  border-right: 1px solid rgb(0 0 0 / 12%);
+  height: 32px;
+  padding: 0 6px;
+  margin-right: 6px;
+  font-size: 13px;
   white-space: nowrap;
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 0;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 40px;
+}
+
+.compact-filter-action {
+  --mdc-text-button-container-height: 32px;
+
+  min-width: 56px;
+  height: 32px;
+  padding-inline: 10px;
+  font-size: 13px;
+}
+
+@media (width <= 900px) {
+  .patient-filter-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .patient-search-field {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (width <= 600px) {
+  .patient-filter-bar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .patient-search-field {
+    grid-column: auto;
+  }
+
+  .filter-actions {
+    justify-content: flex-start;
+  }
 }

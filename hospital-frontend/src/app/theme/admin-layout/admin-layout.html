@@ -1,6 +1,6 @@
 <div
   class="matero-container-wrap matero-navbar-side matero-header-fixed"
-  [class.matero-sidenav-collapsed]="collapsed()"
+  [class.matero-sidenav-collapsed]="!isOver && collapsed()"
   [class.matero-over]="isOver"
   dir="ltr"
 >
@@ -9,9 +9,10 @@
   <mat-sidenav-container class="matero-container" autoFocus>
     <mat-sidenav
       #sidenav
+      id="main-sidebar"
       class="matero-sidenav"
       [mode]="isOver ? 'over' : 'side'"
-      [opened]="options.sidenavOpened && !isOver"
+      [opened]="!isOver || mobileSidenavOpened()"
       (openedChange)="onSidenavOpenedChange($event)"
     >
       <app-sidebar
@@ -27,6 +28,21 @@
     </mat-sidenav>
 
     <mat-sidenav-content #content class="matero-content">
+      @if (isOver) {
+        <div class="matero-mobile-navigation">
+          <button
+            mat-button
+            type="button"
+            aria-label="Open navigation menu"
+            aria-controls="main-sidebar"
+            [attr.aria-expanded]="mobileSidenavOpened()"
+            (click)="mobileSidenavOpened.set(true)"
+          >
+            <mat-icon>menu</mat-icon>
+            Menu
+          </button>
+        </div>
+      }
       <main class="matero-page-content">
         <router-outlet />
       </main>

@@ -1,0 +1,4 @@
+interface:
+  display_name: "JPA Patterns"
+  short_description: "Diagnose JPA mappings, queries, and transactions"
+  default_prompt: "Use $jpa-patterns to diagnose this JPA or Hibernate issue and recommend a verified pattern."

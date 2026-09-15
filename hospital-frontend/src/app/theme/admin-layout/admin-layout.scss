@@ -46,11 +46,20 @@
   margin-left: 0 !important;
 }
 
+.matero-mobile-navigation {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.5rem var(--gutter);
+  background-color: var(--mat-sys-surface);
+}
+
 // Layout control
 .matero-sidenav-collapsed {
   .matero-sidenav {
-    width: var(--sidenav-collapsed-width) !important;
     --mat-sidenav-container-width: var(--sidenav-collapsed-width);
+
+    width: var(--sidenav-collapsed-width) !important;
 
     .menu-name,
     .menu-label,

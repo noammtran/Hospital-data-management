@@ -8,6 +8,7 @@ import com.usth.hospital.dto.response.PatientHistoryResponse;
 import com.usth.hospital.dto.response.PatientListResponse;
 import com.usth.hospital.model.PatientEntity;
 import com.usth.hospital.model.PatientHistoryEntity;
+import com.usth.hospital.model.PatientStatus;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -30,7 +31,7 @@ public class PatientMapper {
                 .emergencyContactName(req.emergencyContactName())
                 .emergencyContactPhone(req.emergencyContactPhone())
                 .emergencyContactRelation(req.emergencyContactRelation())
-                .status(req.status())
+                .status(PatientStatus.WAITING.code())
                 .note(req.note())
                 .build();
     }
@@ -51,7 +52,6 @@ public class PatientMapper {
         entity.setEmergencyContactName(req.emergencyContactName());
         entity.setEmergencyContactPhone(req.emergencyContactPhone());
         entity.setEmergencyContactRelation(req.emergencyContactRelation());
-        entity.setStatus(req.status());
         entity.setNote(req.note());
     }
 

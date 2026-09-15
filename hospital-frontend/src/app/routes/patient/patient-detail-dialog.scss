@@ -8,6 +8,30 @@
   }
 }
 
+.section-heading {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+
+  .section-title {
+    margin-top: 0;
+  }
+}
+
+.admission-note {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.workflow-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
 // Description-table layout: two columns of label/value rows with a thin
 // divider, so every label lines up and values read as one aligned column.
 .detail-grid {
@@ -19,7 +43,7 @@
     display: flex;
     align-items: baseline;
     padding: 8px 0;
-    border-bottom: 1px solid rgb(0 0 0 / 8%);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   }
 
   .item.full {
@@ -29,12 +53,12 @@
   .label {
     flex: 0 0 140px;
     font-size: 13px;
-    color: rgb(0 0 0 / 60%);
+    color: rgba(0, 0, 0, 0.6);
   }
 
   .value {
     flex: 1;
-    word-break: break-word;
+    overflow-wrap: break-word;
   }
 }
 
@@ -50,28 +74,35 @@
   font-weight: 600;
 }
 
+.record-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
 .empty-record {
   margin: 6px 0;
   font-size: 13px;
-  color: rgb(0 0 0 / 60%);
+  color: rgba(0, 0, 0, 0.6);
 }
 
 .record-table {
   width: 100%;
-  border-collapse: collapse;
   font-size: 13px;
+  border-collapse: collapse;
 
   th,
   td {
-    padding: 6px 8px;
-    text-align: left;
+    padding: 2px 8px;
     vertical-align: top;
-    border-bottom: 1px solid rgb(0 0 0 / 8%);
+    text-align: left;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   }
 
   th {
     font-weight: 600;
-    color: rgb(0 0 0 / 60%);
+    color: rgba(0, 0, 0, 0.6);
   }
 }
 

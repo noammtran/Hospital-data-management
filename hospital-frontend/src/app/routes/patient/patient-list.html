@@ -1,8 +1,8 @@
 <mat-card>
   <mat-card-content>
-    <form class="row" [formGroup]="filterForm">
-      <div class="col-sm-6 col-md-4">
-        <mat-form-field class="w-full">
+    <form class="patient-filter-bar" [formGroup]="filterForm">
+      <div class="patient-search-field">
+        <mat-form-field class="w-full" subscriptSizing="dynamic">
           <mat-label>Search</mat-label>
           <button
             matPrefix
@@ -25,8 +25,8 @@
           }
         </mat-menu>
       </div>
-      <div class="col-sm-3 col-md-2">
-        <mat-form-field class="w-full">
+      <div>
+        <mat-form-field class="w-full" subscriptSizing="dynamic">
           <mat-label>Status</mat-label>
           <mat-select formControlName="status">
             <mat-option [value]="null">All</mat-option>
@@ -36,8 +36,8 @@
           </mat-select>
         </mat-form-field>
       </div>
-      <div class="col-sm-3 col-md-2">
-        <mat-form-field class="w-full">
+      <div>
+        <mat-form-field class="w-full" subscriptSizing="dynamic">
           <mat-label>Gender</mat-label>
           <mat-select formControlName="gender">
             <mat-option [value]="null">All</mat-option>
@@ -47,22 +47,31 @@
           </mat-select>
         </mat-form-field>
       </div>
+      <div class="filter-actions">
+        <button mat-button type="button" class="compact-filter-action" (click)="resetFilters()">
+          Reset
+        </button>
+      </div>
     </form>
 
     <div class="patient-actions d-flex align-items-center m-b-16">
-      <button mat-flat-button color="primary" (click)="openCreate()">
-        <mat-icon>add</mat-icon>
-        Add patient
-      </button>
-      <button
-        mat-flat-button
-        class="btn-delete m-l-8"
-        [disabled]="selected().length === 0"
-        (click)="bulkDelete()"
-      >
-        <mat-icon>delete</mat-icon>
-        Delete selected ({{ selected().length }})
-      </button>
+      @if (canCreatePatient) {
+        <button mat-flat-button color="primary" (click)="openCreate()">
+          <mat-icon>add</mat-icon>
+          Add patient
+        </button>
+      }
+      @if (canDeletePatient) {
+        <button
+          mat-flat-button
+          class="btn-delete m-l-8"
+          [disabled]="selected().length === 0"
+          (click)="bulkDelete()"
+        >
+          <mat-icon>delete</mat-icon>
+          Delete selected ({{ selected().length }})
+        </button>
+      }
     </div>
 
     <mtx-grid
@@ -74,8 +83,8 @@
       [pageIndex]="page - 1"
       [pageSize]="size"
       [pageSizeOptions]="[10, 20, 50]"
-      [rowSelectable]="true"
-      [multiSelectable]="true"
+      [rowSelectable]="canDeletePatient"
+      [multiSelectable]="canDeletePatient"
       [disableRowClickSelection]="true"
       [showColumnMenuButton]="false"
       [rowHover]="true"

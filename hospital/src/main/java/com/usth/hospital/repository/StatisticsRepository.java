@@ -14,27 +14,56 @@ import org.springframework.data.repository.query.Param;
  */
 public interface StatisticsRepository extends Repository<PatientEntity, String> {
 
-    /**
-     * Patients matching every supplied criterion. Each criterion is optional:
-     * when its parameter is null the corresponding condition is skipped, so the
-     * result narrows as more filters are provided (date range, diagnosis,
-     * medicine). The date range applies only when both ends are given.
-     */
+    /** Patients matching every supplied cohort criterion with activity counts. */
     @Query(value = """
-            SELECT p.patient_id AS id, p.patient_name AS name, p.patient_identity_no AS "identityNo"
+            SELECT p.patient_id AS id,
+                   p.patient_name AS name,
+                   p.patient_identity_no AS "identityNo",
+                   p.patient_birth_date AS "birthDate",
+                   p.patient_gender AS gender,
+                   p.patient_status AS status,
+                   (SELECT COUNT(*)
+                      FROM ADMISSIONS ca
+                     WHERE ca.admission_patient_id = p.patient_id
+                       AND (:fromDate IS NULL OR TRUNC(ca.admission_date) BETWEEN :fromDate AND :toDate))
+                       AS "admissionCount",
+                   (SELECT COUNT(*)
+                      FROM DIAGNOSES cd
+                     WHERE cd.diagnose_patient_id = p.patient_id
+                       AND (:fromDate IS NULL OR TRUNC(cd.diagnose_date) BETWEEN :fromDate AND :toDate))
+                       AS "diagnosisCount",
+                   (SELECT COUNT(*)
+                      FROM PRESCRIPTIONS cp
+                     WHERE cp.prescription_patient_id = p.patient_id
+                       AND (:fromDate IS NULL OR TRUNC(cp.prescription_date) BETWEEN :fromDate AND :toDate))
+                       AS "prescriptionCount"
             FROM PATIENTS p
-            WHERE (:fromDate IS NULL OR :toDate IS NULL OR EXISTS (
-                       SELECT 1 FROM ADMISSIONS a
-                       WHERE a.admission_patient_id = p.patient_id
-                         AND TRUNC(a.admission_date) BETWEEN :fromDate AND :toDate))
+            WHERE (:fromDate IS NULL
+                   OR EXISTS (
+                       SELECT 1
+                         FROM ADMISSIONS a
+                        WHERE a.admission_patient_id = p.patient_id
+                          AND TRUNC(a.admission_date) BETWEEN :fromDate AND :toDate)
+                   OR EXISTS (
+                       SELECT 1
+                         FROM DIAGNOSES activity_d
+                        WHERE activity_d.diagnose_patient_id = p.patient_id
+                          AND TRUNC(activity_d.diagnose_date) BETWEEN :fromDate AND :toDate)
+                   OR EXISTS (
+                       SELECT 1
+                         FROM PRESCRIPTIONS activity_p
+                        WHERE activity_p.prescription_patient_id = p.patient_id
+                          AND TRUNC(activity_p.prescription_date) BETWEEN :fromDate AND :toDate))
               AND (:icdCode IS NULL OR EXISTS (
                        SELECT 1 FROM DIAGNOSES d
                        WHERE d.diagnose_patient_id = p.patient_id
-                         AND UPPER(d.diagnose_icd_code) = UPPER(:icdCode)))
+                         AND UPPER(d.diagnose_icd_code) = UPPER(:icdCode)
+                         AND (:fromDate IS NULL OR TRUNC(d.diagnose_date) BETWEEN :fromDate AND :toDate)))
               AND (:medicineId IS NULL OR EXISTS (
                        SELECT 1 FROM PRESCRIPTIONS pr
                        WHERE pr.prescription_patient_id = p.patient_id
-                         AND pr.prescription_medicine_id = :medicineId))
+                         AND pr.prescription_medicine_id = :medicineId
+                         AND (:fromDate IS NULL OR TRUNC(pr.prescription_date) BETWEEN :fromDate AND :toDate)))
             ORDER BY p.patient_name
             """, nativeQuery = true)
     List<PatientRow> filterPatients(@Param("fromDate") LocalDate fromDate,
@@ -67,6 +96,18 @@ public interface StatisticsRepository extends Repository<PatientEntity, String> 
         String getName();
 
         String getIdentityNo();
+
+        LocalDate getBirthDate();
+
+        Integer getGender();
+
+        Integer getStatus();
+
+        Long getAdmissionCount();
+
+        Long getDiagnosisCount();
+
+        Long getPrescriptionCount();
     }
 
     interface DiagnosisRow {

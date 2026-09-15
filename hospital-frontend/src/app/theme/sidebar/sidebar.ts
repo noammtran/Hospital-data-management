@@ -1,8 +1,8 @@
 import { Component, ViewEncapsulation, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { Sidemenu } from '../sidemenu/sidemenu';
 import { UserPanel } from './user-panel';
@@ -13,10 +13,10 @@ import { UserPanel } from './user-panel';
   styleUrl: './sidebar.scss',
   encapsulation: ViewEncapsulation.None,
   imports: [
-    MatSlideToggleModule,
     MatIconModule,
     MatButtonModule,
     MatToolbarModule,
+    MatTooltipModule,
     Sidemenu,
     UserPanel,
   ],

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Paper Audit"
+  short_description: "Audit academic papers like a peer reviewer"
+  default_prompt: "Use $paper-audit to perform a reviewer-style audit of this paper and prioritize submission blockers."

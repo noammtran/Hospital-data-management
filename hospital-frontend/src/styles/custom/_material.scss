@@ -1,3 +1,5 @@
+@use '@angular/material' as mat;
+
 /** Custom Material styles */
 
 mat-card {
@@ -17,6 +19,10 @@ mat-card-header + mat-card-content {
 // Keep the data table calm: selected rows use a soft blue accent (not the
 // theme green), and hover is a neutral tint instead of green.
 mtx-grid {
+  @include mat.table-density(-4);
+  @include mat.icon-button-density(-4);
+  @include mat.checkbox-density(-2);
+
   --mtx-grid-table-row-hover-background-color: var(--mat-sys-surface-container-high);
   --mtx-grid-table-row-selected-background-color: var(--mat-sys-tertiary-container);
   --mtx-grid-table-row-selected-hover-background-color: var(--mat-sys-tertiary-container);

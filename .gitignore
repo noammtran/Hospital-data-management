@@ -1,23 +1,59 @@
+# Local assistant and editor state
 /.claude/
-/.agents/
 /.codex/
+/.codex-tmp/
+/.legacy-ai/
 /.vscode/
 
-
+# Existing exclusions for local workflows and supporting material
 /.github/
 /hospital/.github/
-
-
 /data/
-
 /docs/
 
-
-/hospital/test-out.txt
-
+# Local launchers and notes
 /start.ps1
 /stop.ps1
+/note_test.txt
+/hospital/test-out.txt
 
+# Local backups, exports, and scratch work
+/tmp/
+/Hospital-data-management-main.zip
+/Markdown to PDF.pdf
+/slide.pdf
+/slide.pptx
 
+# Local credentials and machine configuration
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+application-local.properties
+application-local.yml
+application-local.yaml
+*.key
+*.p12
+*.pfx
+*.jks
+
+# Dependencies, generated output, and test artifacts
+node_modules/
+.angular/
+coverage/
+playwright-report/
+test-results/
+__screenshots__/
+*.log
+*.tsbuildinfo
+
+# Python caches used by local tooling
+__pycache__/
+.pytest_cache/
+*.pyc
+.venv/
+
+# Operating system files
 Thumbs.db
 .DS_Store

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { AuthService, User } from '@core/authentication';
 import { NgxPermissionsService, NgxRolesService } from 'ngx-permissions';
-import { switchMap, tap } from 'rxjs';
+import { catchError, of, switchMap, tap } from 'rxjs';
 import { Menu, MenuService } from './menu.service';
 
 @Injectable({
@@ -12,25 +12,45 @@ export class StartupService {
   private readonly menuService = inject(MenuService);
   private readonly permissonsService = inject(NgxPermissionsService);
   private readonly rolesService = inject(NgxRolesService);
+  private loadPromise?: Promise<void>;
 
   /**
    * Load the application only after get the menu or other essential informations
    * such as permissions and roles.
    */
   load() {
-    return new Promise<void>((resolve, reject) => {
+    if (this.loadPromise) {
+      return this.loadPromise;
+    }
+
+    this.loadPromise = new Promise<void>(resolve => {
+      let initialLoad = true;
       this.authService
         .change()
         .pipe(
           tap(user => this.setPermissions(user)),
-          switchMap(() => this.authService.menu()),
+          switchMap(() => this.authService.menu().pipe(catchError(() => of([])))),
           tap(menu => this.setMenu(menu))
         )
         .subscribe({
-          next: () => resolve(),
-          error: () => resolve(),
+          next: () => {
+            if (initialLoad) {
+              initialLoad = false;
+              resolve();
+            }
+          },
+          error: () => {
+            if (initialLoad) {
+              initialLoad = false;
+              resolve();
+            }
+          },
         });
+
+      this.authService.restore().subscribe();
     });
+
+    return this.loadPromise;
   }
 
   private setMenu(menu: Menu[]) {
@@ -39,13 +59,17 @@ export class StartupService {
   }
 
   private setPermissions(user: User) {
-    // In a real app, you should get permissions and roles from the user information.
-    const permissions = ['canAdd', 'canDelete', 'canEdit', 'canRead'];
+    const permissions = user.permissions ?? [];
+    const roles = user.roles ?? [];
     this.permissonsService.loadPermissions(permissions);
     this.rolesService.flushRoles();
-    this.rolesService.addRoles({ ADMIN: permissions });
-
-    // Tips: Alternatively you can add permissions with role at the same time.
-    // this.rolesService.addRolesWithPermissions({ ADMIN: permissions });
+    if (roles.length > 0) {
+      this.rolesService.addRoles(
+        roles.reduce<Record<string, string[]>>((result, role) => {
+          result[role] = permissions;
+          return result;
+        }, {})
+      );
+    }
   }
 }

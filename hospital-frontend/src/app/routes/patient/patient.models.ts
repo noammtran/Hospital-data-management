@@ -1,4 +1,4 @@
-/** Generic response envelope returned by the backend (`ApiResponse<T>`). */
+/* Generic response envelope returned by the backend (`ApiResponse<T>`). */
 export interface ApiResponse<T> {
   success: boolean;
   statusCode: number;
@@ -59,7 +59,7 @@ export interface PatientDetail {
   lastUpdatedDate: string;
 }
 
-/** Body of POST / PUT (CreatePatientRequest / UpdatePatientRequest). */
+/** Body of POST / PUT (CreatePatientRequest / UpdatePatientRequest). Status uses workflow actions. */
 export interface PatientPayload {
   name: string;
   birthDate: string | null;
@@ -76,7 +76,6 @@ export interface PatientPayload {
   emergencyContactName: string | null;
   emergencyContactPhone: string | null;
   emergencyContactRelation: string | null;
-  status: number;
   note: string | null;
 }
 
@@ -165,11 +164,11 @@ export interface VisitPrescription {
 
 /** One treatment episode (visit) with its diagnoses and prescriptions. */
 export interface Visit {
-  admissionId: string;
-  admissionDate: string;
+  admissionId: string | null;
+  admissionDate: string | null;
   dischargeDate: string | null;
-  departmentName: string;
-  doctorName: string;
+  departmentName: string | null;
+  doctorName: string | null;
   roomName: string | null;
   reason: string | null;
   type: number | null;
@@ -177,6 +176,104 @@ export interface Visit {
   notes: string | null;
   diagnoses: VisitDiagnosis[];
   prescriptions: VisitPrescription[];
+  care?: MedicalRecordCare | null;
+}
+
+export interface MedicalRecordCare {
+  id: string;
+  createdAt: string;
+  closedAt: string | null;
+  status: string;
+  pointName: string | null;
+  doctorName: string | null;
+  complaint: string | null;
+  conclusion: string | null;
+  plan: string | null;
+  outcome: string | null;
+  followupPlan: string | null;
+  followupAt: string | null;
+  services: {
+    id: number;
+    name: string;
+    status: string;
+    reason: string | null;
+    resolution: string | null;
+    results: import('../care/care.models').CareResult[];
+  }[];
+  notes: import('../care/care.models').CareNote[];
+  handoffs: import('../care/care.models').CareHandoff[];
+}
+
+export function recordKey(visit: Visit): string {
+  return visit.care ? `care:${visit.care.id}` : `admission:${visit.admissionId}`;
+}
+
+export function recordStart(visit: Visit): string | null {
+  const careDate = visit.care?.createdAt;
+  if (!careDate) return visit.admissionDate;
+  return visit.admissionDate && visit.admissionDate < careDate.slice(0, 10)
+    ? visit.admissionDate
+    : careDate;
+}
+
+export interface AdmissionDepartmentOption {
+  id: number;
+  code: string;
+  name: string;
+}
+
+export interface AdmissionDoctorOption {
+  id: number;
+  code: string;
+  name: string;
+  /** The doctor's home department; admissions may validly use another department. */
+  departmentId: number;
+}
+
+export interface AdmissionRoomOption {
+  id: number;
+  name: string;
+  departmentId: number;
+  bedCount: number;
+  currentOccupancy: number;
+}
+
+export interface AdmissionOptions {
+  departments: AdmissionDepartmentOption[];
+  doctors: AdmissionDoctorOption[];
+  rooms: AdmissionRoomOption[];
+  types: LookupOption[];
+}
+
+export interface CreateAdmissionPayload {
+  departmentId: number;
+  doctorId: number;
+  roomId: number | null;
+  admissionDate: string;
+  reason: string | null;
+  type: number | null;
+  notes: string | null;
+}
+
+export type UpdateAdmissionPayload = CreateAdmissionPayload;
+
+export interface Admission {
+  admissionId: string;
+  patientId: string;
+  departmentId: number;
+  doctorId: number;
+  roomId: number | null;
+  admissionDate: string;
+  dischargeDate: string | null;
+  reason: string | null;
+  type: number | null;
+  status: number;
+  notes: string | null;
+}
+
+export interface AdmissionEditData {
+  admission: Admission;
+  options: AdmissionOptions;
 }
 
 export function lookupLabel(options: LookupOption[], value: number | null | undefined): string {

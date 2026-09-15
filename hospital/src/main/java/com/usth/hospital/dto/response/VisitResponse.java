@@ -15,5 +15,6 @@ public record VisitResponse(
         Integer status,
         String notes,
         List<VisitDiagnosisResponse> diagnoses,
-        List<VisitPrescriptionResponse> prescriptions) {
+        List<VisitPrescriptionResponse> prescriptions,
+        MedicalRecordCareResponse care) {
 }

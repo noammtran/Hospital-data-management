@@ -1,5 +1,6 @@
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -13,8 +14,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MtxDialog } from '@ng-matero/extensions/dialog';
 import { MtxGrid, MtxGridColumn } from '@ng-matero/extensions/grid';
 import { HotToastService } from '@ngxpert/hot-toast';
-import { debounceTime } from 'rxjs';
+import { Subscription, debounceTime } from 'rxjs';
 
+import { AuthService } from '@core/authentication';
 import { PatientDetailDialog } from './patient-detail-dialog';
 import { PatientFormDialog } from './patient-form-dialog';
 import { PatientHistoryDialog } from './patient-history-dialog';
@@ -45,10 +47,22 @@ import { PatientService } from './patient.service';
 export class PatientList implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly patientService = inject(PatientService);
+  private readonly auth = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly mtxDialog = inject(MtxDialog);
   private readonly toast = inject(HotToastService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
+  private loadSubscription?: Subscription;
+
+  readonly canCreatePatient = this.auth.hasPermission('CREATE_PATIENT');
+  readonly canUpdatePatient = this.auth.hasPermission('UPDATE_PATIENT');
+  readonly canDeletePatient = this.auth.hasPermission('DELETE_PATIENT');
+  readonly canViewHistory = this.auth.hasPermission('VIEW_PATIENT_HISTORY');
+  readonly canUseCare = this.auth.hasPermission('CARE_VIEW');
+  readonly canCheckIn = this.auth.hasPermission('PATIENT_CHECK_IN');
+  readonly canStartExamination = this.auth.hasPermission('PATIENT_START_EXAMINATION');
+  readonly canCompleteExamination = this.auth.hasPermission('PATIENT_COMPLETE_EXAMINATION');
 
   readonly genderOptions = GENDER_OPTIONS;
   readonly statusOptions = PATIENT_STATUS_OPTIONS;
@@ -69,6 +83,7 @@ export class PatientList implements OnInit {
   readonly total = signal(0);
   readonly loading = signal(true);
   readonly selected = signal<PatientListItem[]>([]);
+  readonly transitioningPatientId = signal<string | null>(null);
 
   page = 1;
   size = 20;
@@ -109,14 +124,48 @@ export class PatientList implements OnInit {
           tooltip: 'Actions',
           children: [
             { text: 'View details', icon: 'visibility', click: row => this.openDetail(row) },
-            { text: 'Edit', icon: 'edit', click: row => this.openEdit(row) },
-            { text: 'Delete', icon: 'delete', click: row => this.delete(row) },
+            { text: 'Care visits / registration', icon: 'local_hospital', iif: () => this.canUseCare,
+              click: row => { void this.router.navigate(['/care'], { queryParams: { patientId: row.id } }); } },
+            {
+              text: 'Check in for new visit',
+              icon: 'how_to_reg',
+              iif: row => !this.canUseCare && this.canCheckIn && row.status === 3,
+              disabled: row => this.transitioningPatientId() === row.id,
+              click: row => this.checkIn(row),
+            },
+            {
+              text: 'Start examination',
+              icon: 'medical_services',
+              iif: row => !this.canUseCare && this.canStartExamination && row.status === 0,
+              disabled: row => this.transitioningPatientId() === row.id,
+              click: row => this.startExamination(row),
+            },
+            {
+              text: 'Complete examination',
+              icon: 'task_alt',
+              iif: row => !this.canUseCare && this.canCompleteExamination && row.status === 1,
+              disabled: row => this.transitioningPatientId() === row.id,
+              click: row => this.completeExamination(row),
+            },
+            {
+              text: 'Edit',
+              icon: 'edit',
+              iif: () => this.canUpdatePatient,
+              click: row => this.openEdit(row),
+            },
+            {
+              text: 'Delete',
+              icon: 'delete',
+              iif: () => this.canDeletePatient,
+              click: row => this.delete(row),
+            },
           ],
         },
         {
           type: 'icon',
           icon: 'history',
           tooltip: 'Change history',
+          iif: () => this.canViewHistory,
           // Lit only when the patient actually has recorded changes.
           disabled: row => !row.hasHistory,
           click: row => this.openHistory(row),
@@ -127,8 +176,7 @@ export class PatientList implements OnInit {
 
   ngOnInit() {
     this.load();
-    // No explicit search button: the text box filters after a short typing
-    // pause, the selects immediately on change.
+    // Keep search responsive without sending one request per keystroke.
     this.filterForm.valueChanges
       .pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.applyFilter());
@@ -138,7 +186,8 @@ export class PatientList implements OnInit {
     this.loading.set(true);
     this.selected.set([]);
     const f = this.filterForm.getRawValue();
-    this.patientService
+    this.loadSubscription?.unsubscribe();
+    this.loadSubscription = this.patientService
       .list({
         page: this.page,
         size: this.size,
@@ -147,6 +196,7 @@ export class PatientList implements OnInit {
         status: f.status,
         gender: f.gender,
       })
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: res => {
           this.list.set(res.items);
@@ -169,6 +219,10 @@ export class PatientList implements OnInit {
   applyFilter() {
     this.page = 1;
     this.load();
+  }
+
+  resetFilters() {
+    this.filterForm.reset({ searchField: 'name', search: '', status: null, gender: null });
   }
 
   onPage(e: PageEvent) {
@@ -204,12 +258,57 @@ export class PatientList implements OnInit {
   }
 
   openDetail(row: PatientListItem) {
-    this.dialog.open(PatientDetailDialog, {
-      width: '1080px',
-      maxWidth: '95vw',
-      autoFocus: false,
-      data: { id: row.id },
+    this.dialog
+      .open(PatientDetailDialog, {
+        width: '1080px',
+        maxWidth: '95vw',
+        autoFocus: false,
+        data: { id: row.id },
+      })
+      .afterClosed()
+      .subscribe(() => this.load());
+  }
+
+  checkIn(row: PatientListItem) {
+    this.transitioningPatientId.set(row.id);
+    this.patientService.checkIn(row.id).subscribe({
+      next: () => {
+        this.toast.success(`${row.name} checked in and is now waiting`);
+        this.transitioningPatientId.set(null);
+        this.load();
+      },
+      error: () => this.transitioningPatientId.set(null),
     });
+  }
+
+  startExamination(row: PatientListItem) {
+    this.transitioningPatientId.set(row.id);
+    this.patientService.startExamination(row.id).subscribe({
+      next: () => {
+        this.toast.success(`Examination started for ${row.name}`);
+        this.transitioningPatientId.set(null);
+        this.load();
+      },
+      error: () => this.transitioningPatientId.set(null),
+    });
+  }
+
+  completeExamination(row: PatientListItem) {
+    this.mtxDialog.confirm(
+      'Complete this examination?',
+      'The patient will move to Discharged. If a treatment episode is active, complete it from Patient details instead.',
+      () => {
+        this.transitioningPatientId.set(row.id);
+        this.patientService.completeExamination(row.id).subscribe({
+          next: () => {
+            this.toast.success(`Examination completed for ${row.name}`);
+            this.transitioningPatientId.set(null);
+            this.load();
+          },
+          error: () => this.transitioningPatientId.set(null),
+        });
+      }
+    );
   }
 
   openHistory(row: PatientListItem) {

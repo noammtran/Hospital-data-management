@@ -1,19 +1,37 @@
-import { HttpRequest, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { fakeAsync, TestBed, tick } from '@angular/core/testing';
-import { AuthService, LoginService, TokenService, User } from '@core/authentication';
+import { TestBed } from '@angular/core/testing';
+import { AuthService, TokenService, User } from '@core/authentication';
 import { LocalStorageService, MemoryStorageService } from '@shared/services/storage.service';
-import { Observable, skip } from 'rxjs';
+import { skip } from 'rxjs';
 
 describe('AuthService', () => {
   let authService: AuthService;
-  let loginService: LoginService;
   let tokenService: TokenService;
   let httpMock: HttpTestingController;
-  let user$: Observable<User>;
-  const email = 'foo@bar.com';
-  const token = { access_token: 'token', token_type: 'bearer' };
-  const user = { id: 1, email };
+
+  const tokenEnvelope = {
+    success: true,
+    statusCode: 200,
+    message: 'Success',
+    data: { accessToken: 'token', tokenType: 'Bearer', expiresIn: 1800 },
+    timestamp: '2026-07-31T00:00:00Z',
+  };
+  const profileEnvelope = {
+    success: true,
+    statusCode: 200,
+    message: 'Success',
+    data: {
+      id: 2,
+      username: 'doctor',
+      email: 'doctor@hospital.example',
+      displayName: 'Doctor Demo',
+      role: 'DOCTOR',
+      permissions: ['VIEW_PATIENT', 'VIEW_MEDICAL_RECORD', 'VIEW_STATISTICS', 'ADMISSION_CREATE'],
+      mustChangePassword: false,
+    },
+    timestamp: '2026-07-31T00:00:00Z',
+  };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -23,15 +41,9 @@ describe('AuthService', () => {
         provideHttpClientTesting(),
       ],
     });
-    loginService = TestBed.inject(LoginService);
     authService = TestBed.inject(AuthService);
     tokenService = TestBed.inject(TokenService);
     httpMock = TestBed.inject(HttpTestingController);
-
-    user$ = authService.user();
-    authService.change().subscribe(user => {
-      expect(user).toBeInstanceOf(Object);
-    });
   });
 
   afterEach(() => httpMock.verify());
@@ -40,95 +52,94 @@ describe('AuthService', () => {
     expect(authService).toBeTruthy();
   });
 
-  it('should log in failed', () => {
-    authService.login(email, 'password', false).subscribe(isLogin => expect(isLogin).toBeFalse());
-    httpMock.expectOne('/auth/login').flush({});
+  it('should clear the session when login fails', () => {
+    let failed = false;
+    authService.login('doctor', 'wrong').subscribe({ error: () => (failed = true) });
+    httpMock
+      .expectOne('/api/v1/auth/login')
+      .flush({}, { status: 401, statusText: 'Unauthorized' });
 
-    expect(authService.check()).toBeFalse();
+    expect(failed).toBe(true);
+    expect(authService.check()).toBe(false);
   });
 
-  it('should log in successful and get user info', () => {
-    user$.pipe(skip(1)).subscribe(currentUser => expect(currentUser.id).toEqual(user.id));
-    authService.login(email, 'password', false).subscribe(isLogin => expect(isLogin).toBeTrue());
-    httpMock.expectOne('/auth/login').flush(token);
+  it('should store the token and publish the database user after login', () => {
+    let currentUser: User | undefined;
+    authService.user().subscribe(user => (currentUser = user));
+    authService.login('doctor', 'Doctor@123').subscribe(authenticated => {
+      expect(authenticated).toBe(true);
+    });
 
-    expect(authService.check()).toBeTrue();
-    httpMock.expectOne('/user').flush(user);
+    const loginRequest = httpMock.expectOne('/api/v1/auth/login');
+    expect(loginRequest.request.body).toEqual({ username: 'doctor', password: 'Doctor@123' });
+    loginRequest.flush(tokenEnvelope);
+    httpMock.expectOne('/api/v1/auth/me').flush(profileEnvelope);
+
+    expect(authService.check()).toBe(true);
+    expect(currentUser?.name).toBe('Doctor Demo');
+    expect(currentUser?.roles).toEqual(['DOCTOR']);
+    expect(authService.hasPermission('VIEW_STATISTICS')).toBe(true);
+    expect(authService.hasPermission('ADMISSION_CREATE')).toBe(true);
+    expect(authService.hasPermission('ADMISSION_DELETE')).toBe(false);
+    expect(authService.hasPermission('MANAGE_USERS')).toBe(false);
+    expect(authService.landingPath()).toBe('/patients');
   });
 
-  it('should log out failed when user is not login', () => {
-    spyOn(loginService, 'logout').and.callThrough();
-    expect(authService.check()).toBeFalse();
+  it('should restore a valid stored session from /auth/me', () => {
+    tokenService.set({ access_token: 'token', token_type: 'Bearer' });
+    authService.restore().subscribe(user => expect(user.username).toBe('doctor'));
 
-    authService.logout().subscribe();
-    httpMock.expectOne('/auth/logout');
+    httpMock.expectOne('/api/v1/auth/me').flush(profileEnvelope);
 
-    expect(authService.check()).toBeFalse();
-    expect(loginService.logout).toHaveBeenCalled();
+    expect(authService.hasRole('DOCTOR')).toBe(true);
   });
 
-  it('should log out successful when user is login', () => {
-    tokenService.set(token);
-    expect(authService.check()).toBeTrue();
-    httpMock.expectOne('/user').flush(user);
+  it('should publish an anonymous user without an API request when no token exists', () => {
+    let user: User | undefined;
+    authService.user().pipe(skip(0)).subscribe(value => (user = value));
 
-    user$.pipe(skip(1)).subscribe(currentUser => expect(currentUser.id).toBeUndefined());
-    authService.logout().subscribe();
-    httpMock.expectOne('/auth/logout').flush({});
+    authService.restore().subscribe();
 
-    expect(authService.check()).toBeFalse();
+    httpMock.expectNone('/api/v1/auth/me');
+    expect(user).toEqual({});
   });
 
-  it('should refresh token when access_token is valid', fakeAsync(() => {
-    tokenService.set(Object.assign({ expires_in: 5 }, token));
-    expect(authService.check()).toBeTrue();
-    httpMock.expectOne('/user').flush(user);
-    const match = (req: HttpRequest<any>) => req.url === '/auth/refresh' && !req.body.refresh_token;
+  it('should log out locally because the API uses stateless access tokens', () => {
+    tokenService.set({ access_token: 'token', token_type: 'Bearer' });
 
-    tick(4000);
-    expect(authService.check()).toBeTrue();
-    httpMock.match(match)[0].flush(token);
+    authService.logout().subscribe(loggedOut => expect(loggedOut).toBe(true));
 
-    expect(authService.check()).toBeTrue();
-    httpMock.expectNone('/user');
-    tokenService.ngOnDestroy();
-  }));
+    httpMock.expectNone('/api/v1/auth/logout');
+    expect(authService.check()).toBe(false);
+  });
 
-  it('should refresh token when access_token is invalid and refresh_token is valid', fakeAsync(() => {
-    tokenService.set(Object.assign({ expires_in: 5, refresh_token: 'foo' }, token));
-    const match = (req: HttpRequest<any>) =>
-      req.url === '/auth/refresh' && req.body.refresh_token === 'foo';
+  it('should route a patient with a temporary password to password change', () => {
+    tokenService.set({ access_token: 'token', token_type: 'Bearer' });
+    authService.restore().subscribe();
+    httpMock.expectOne('/api/v1/auth/me').flush({
+      ...profileEnvelope,
+      data: {
+        ...profileEnvelope.data,
+        role: 'PATIENT',
+        permissions: ['CHANGE_OWN_PASSWORD'],
+        mustChangePassword: true,
+      },
+    });
 
-    expect(authService.check()).toBeTrue();
-    httpMock.expectOne('/user').flush(user);
-    tick(10000);
-    expect(authService.check()).toBeFalse();
-    httpMock.match(match)[0].flush(token);
+    expect(authService.landingPath()).toBe('/auth/change-password');
+  });
 
-    expect(authService.check()).toBeTrue();
-    httpMock.expectNone('/user');
-    tokenService.ngOnDestroy();
-  }));
+  it('should clear the current token after changing the password', () => {
+    tokenService.set({ access_token: 'token', token_type: 'Bearer' });
 
-  it('it should clear token when access_token is invalid and refresh token response is 401', fakeAsync(() => {
-    spyOn(tokenService, 'set').and.callThrough();
-    tokenService.set(Object.assign({ expires_in: 5, refresh_token: 'foo' }, token));
-    const match = (req: HttpRequest<any>) =>
-      req.url === '/auth/refresh' && req.body.refresh_token === 'foo';
+    authService.changePassword('079123456789', 'Patient@123').subscribe();
 
-    tick(10000);
-    expect(authService.check()).toBeFalse();
-    httpMock.expectOne('/user').flush({});
-    httpMock.match(match)[0].flush({}, { status: 401, statusText: 'Unauthorized' });
-
-    expect(authService.check()).toBeFalse();
-    expect(tokenService.set).toHaveBeenCalledWith(undefined);
-    tokenService.ngOnDestroy();
-  }));
-
-  it('it only call http request once when on change subscribe twice', () => {
-    authService.change().subscribe();
-    tokenService.set(token);
-    httpMock.expectOne('/user').flush({});
+    const request = httpMock.expectOne('/api/v1/auth/change-password');
+    expect(request.request.body).toEqual({
+      currentPassword: '079123456789',
+      newPassword: 'Patient@123',
+    });
+    request.flush({ success: true, statusCode: 204, data: null });
+    expect(authService.check()).toBe(false);
   });
 });

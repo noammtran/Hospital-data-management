@@ -33,7 +33,7 @@
         <mat-form-field>
           <mat-label>Gender</mat-label>
           <mat-select formControlName="gender">
-            <mat-option [value]="null">—</mat-option>
+            <mat-option [value]="null">Not specified</mat-option>
             @for (opt of genderOptions; track opt.value) {
               <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
             }
@@ -43,7 +43,13 @@
       <div class="col-sm-6">
         <mat-form-field>
           <mat-label>ID card number</mat-label>
-          <input matInput formControlName="identityNo" />
+          <input
+            matInput
+            formControlName="identityNo"
+            inputmode="numeric"
+            maxlength="12"
+            [required]="identityRequired"
+          />
           @if (form.get('identityNo')?.invalid) {
             <mat-error>{{ errorOf('identityNo') }}</mat-error>
           }
@@ -84,27 +90,14 @@
         <mat-form-field>
           <mat-label>Blood type</mat-label>
           <mat-select formControlName="bloodType">
-            <mat-option [value]="null">—</mat-option>
+            <mat-option [value]="null">Not specified</mat-option>
             @for (opt of bloodTypeOptions; track opt.value) {
               <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
       </div>
-      <div class="col-sm-3">
-        <mat-form-field>
-          <mat-label>Status</mat-label>
-          <mat-select formControlName="status" required>
-            @for (opt of statusOptions; track opt.value) {
-              <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
-            }
-          </mat-select>
-          @if (form.get('status')?.invalid) {
-            <mat-error>{{ errorOf('status') }}</mat-error>
-          }
-        </mat-form-field>
-      </div>
-      <div class="col-sm-6">
+      <div class="col-sm-9">
         <mat-form-field>
           <mat-label>Allergies</mat-label>
           <input matInput formControlName="allergies" />

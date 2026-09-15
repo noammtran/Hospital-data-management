@@ -1,0 +1,151 @@
+<h2 mat-dialog-title>
+  {{
+    data.careManaged
+      ? 'Update inpatient details / bed'
+      : isEditMode
+        ? 'Edit admission'
+        : 'Create admission'
+  }}
+</h2>
+
+<mat-dialog-content>
+  <p class="patient-context">
+    <span>Patient</span>
+    <strong>{{ data.patientName }} ({{ data.patientId }})</strong>
+  </p>
+
+  @if (optionsLoading()) {
+    <div class="loading-options"><mat-spinner diameter="32" /></div>
+  } @else if (options(); as admissionOptions) {
+    <form class="form-field-full" [formGroup]="form">
+      <div class="row">
+        <div class="col-sm-6">
+          <mat-form-field>
+            <mat-label>Admission date</mat-label>
+            <input
+              matInput
+              [matDatepicker]="admissionDatePicker"
+              [max]="today"
+              formControlName="admissionDate"
+              required
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="admissionDatePicker" />
+            <mat-datepicker #admissionDatePicker />
+            @if (form.controls.admissionDate.invalid) {
+              <mat-error>{{ errorOf('admissionDate') }}</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="col-sm-6">
+          <mat-form-field>
+            <mat-label>Department</mat-label>
+            <mat-select formControlName="departmentId" required>
+              @for (department of admissionOptions.departments; track department.id) {
+                <mat-option [value]="department.id">
+                  {{ department.name }} ({{ department.code }})
+                </mat-option>
+              }
+            </mat-select>
+            @if (form.controls.departmentId.invalid) {
+              <mat-error>{{ errorOf('departmentId') }}</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="col-sm-6">
+          <mat-form-field>
+            <mat-label>Doctor</mat-label>
+            <mat-select formControlName="doctorId" required>
+              @for (doctor of admissionOptions.doctors; track doctor.id) {
+                <mat-option [value]="doctor.id">{{ doctorLabel(doctor) }}</mat-option>
+              }
+            </mat-select>
+            <mat-hint>
+              {{
+                data.careManaged
+                  ? 'Use doctor handoff to change the doctor.'
+                  : 'Doctors are not restricted by their home department.'
+              }}
+            </mat-hint>
+            @if (form.controls.doctorId.invalid) {
+              <mat-error>{{ errorOf('doctorId') }}</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="col-sm-6">
+          <mat-form-field>
+            <mat-label>Room</mat-label>
+            <mat-select formControlName="roomId">
+              <mat-option [value]="null">Not assigned</mat-option>
+              @for (room of availableRooms(); track room.id) {
+                <mat-option [value]="room.id">
+                  {{ room.name }} ({{ room.currentOccupancy }}/{{ room.bedCount }} occupied)
+                </mat-option>
+              }
+            </mat-select>
+            @if (form.controls.roomId.invalid) {
+              <mat-error>{{ errorOf('roomId') }}</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="col-sm-6">
+          <mat-form-field>
+            <mat-label>Admission type</mat-label>
+            <mat-select formControlName="type">
+              <mat-option [value]="null">Not specified</mat-option>
+              @for (type of admissionOptions.types; track type.value) {
+                <mat-option [value]="type.value">{{ type.label }}</mat-option>
+              }
+            </mat-select>
+            @if (form.controls.type.invalid) {
+              <mat-error>{{ errorOf('type') }}</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="col-12">
+          <mat-form-field>
+            <mat-label>Reason</mat-label>
+            <textarea matInput rows="2" formControlName="reason"></textarea>
+            @if (form.controls.reason.invalid) {
+              <mat-error>{{ errorOf('reason') }}</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="col-12">
+          <mat-form-field>
+            <mat-label>Notes</mat-label>
+            <textarea matInput rows="2" formControlName="notes"></textarea>
+            @if (form.controls.notes.invalid) {
+              <mat-error>{{ errorOf('notes') }}</mat-error>
+            }
+          </mat-form-field>
+        </div>
+      </div>
+    </form>
+  } @else {
+    <p class="options-error">
+      Admission options could not be loaded. Close this popup and try again.
+    </p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button
+    mat-flat-button
+    color="primary"
+    [disabled]="optionsLoading() || !options() || saving()"
+    (click)="save()"
+  >
+    @if (saving()) {
+      {{ isEditMode ? 'Saving...' : 'Creating...' }}
+    } @else {
+      {{ isEditMode ? 'Save changes' : 'Create admission' }}
+    }
+  </button>
+</mat-dialog-actions>

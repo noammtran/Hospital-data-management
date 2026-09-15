@@ -1,0 +1,4 @@
+interface:
+  display_name: "Angular Developer"
+  short_description: "Build and review modern Angular applications"
+  default_prompt: "Use $angular-developer to implement or review this Angular task with the repository's installed Angular version."

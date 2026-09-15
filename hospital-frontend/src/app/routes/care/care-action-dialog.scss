@@ -1,0 +1,46 @@
+:host {
+  display: block;
+}
+
+mat-dialog-content {
+  display: grid;
+  gap: 12px;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+.search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.search-row > * {
+  flex: 1 1 150px;
+}
+
+.patient-context {
+  font-weight: 600;
+}
+
+.hint {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.error {
+  color: var(--mat-sys-error);
+}
+
+.result-preview,
+.prescription {
+  padding: 16px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+}
+
+.result-preview p {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}

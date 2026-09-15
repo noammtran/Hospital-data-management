@@ -1,0 +1,222 @@
+<div class="page-heading">
+  <div>
+    <h1>Care workspace</h1>
+    <p>Follow each examination, service request and inpatient reception.</p>
+  </div>
+  <div class="page-actions">
+    @if (canManage) {
+      <a mat-button routerLink="/care/configuration">Points & staff</a>
+    }
+    @if (canCreate) {
+      <button mat-stroked-button (click)="createPatient()">New patient</button>
+    }
+    @if (canRegister) {
+      <button mat-flat-button (click)="register()" [disabled]="!options()">
+        Register examination
+      </button>
+    }
+  </div>
+</div>
+<mat-button-toggle-group
+  aria-label="Care worklist"
+  [value]="mode()"
+  (change)="setMode($event.value)"
+>
+  <mat-button-toggle value="visits">Visits & follow-up</mat-button-toggle>
+  <mat-button-toggle value="tasks">Room queue</mat-button-toggle>
+  <mat-button-toggle value="inpatients">Inpatients</mat-button-toggle>
+</mat-button-toggle-group>
+@if (patientId() && mode() === 'visits') {
+  <p>
+    Visit history for
+    <strong>{{ patientId() }}</strong>
+    ·
+    <a routerLink="/care">Show all patients</a>
+  </p>
+}
+<form class="filters" [formGroup]="filters" (ngSubmit)="refresh()">
+  <mat-form-field>
+    <mat-label>Patient name or ID</mat-label>
+    <input matInput formControlName="search" maxlength="100" />
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ mode() === 'inpatients' ? 'Ward / department' : 'Care point' }}</mat-label>
+    <mat-select formControlName="pointId">
+      <mat-option [value]="null">All permitted points</mat-option>
+      @for (point of pointOptions(); track point.id) {
+        <mat-option [value]="point.id">{{ point.name }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  @if (mode() !== 'inpatients') {
+    <mat-form-field>
+      <mat-label>Workflow status</mat-label>
+      <mat-select formControlName="status">
+        <mat-option value="">All statuses</mat-option>
+        @for (status of statusOptions(); track status) {
+          <mat-option [value]="status">{{ label(status) }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    @if (mode() === 'tasks') {
+      <mat-form-field>
+        <mat-label>Presence</mat-label>
+        <mat-select formControlName="arrival">
+          <mat-option value="">All presence states</mat-option>
+          @for (state of ['EXPECTED', 'ARRIVED', 'CALLED', 'ABSENT', 'LEFT']; track state) {
+            <mat-option [value]="state">{{ label(state) }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+    <mat-checkbox formControlName="openOnly">Outstanding work only</mat-checkbox>
+  }
+  <button mat-button type="submit">Refresh</button>
+</form>
+<p class="list-note">
+  {{
+    mode() === 'tasks'
+      ? 'Expected means an order was sent here. Confirm arrival when the patient is physically present. Priority cases appear first.'
+      : mode() === 'inpatients'
+        ? 'Active inpatient episodes, including records created before the care workspace.'
+        : 'The responsible doctor stays attached while the patient receives services. Closed visits with pending results stay on this list.'
+  }}
+</p>
+@if (error()) {
+  <p class="error" role="alert">{{ error() }} Displayed rows may be out of date.</p>
+}
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Refreshing worklist" />
+}
+<div class="table-scroll">
+  @if (mode() === 'visits') {
+    <table>
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Care progress</th>
+          <th>Responsible team</th>
+          <th>Last confirmed location</th>
+          <th>Results</th>
+          <th>Registered</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (visit of visitRows(); track visit.id) {
+          <tr [class.critical]="visit.critical">
+            <td>
+              <strong>{{ visit.patientName }}</strong>
+              <small>{{ visit.patientId }} · {{ patientStatus(visit.patientStatus) }}</small>
+              @if (visit.priority > 0) {
+                <span class="badge">{{ visit.priority === 2 ? 'Urgent' : 'Priority' }}</span>
+              }
+            </td>
+            <td>{{ label(visit.progress) }}</td>
+            <td>
+              {{ visit.ownerName || 'Doctor not yet assigned' }}
+              <small>{{ visit.pointName }}</small>
+            </td>
+            <td>{{ visit.locationName || 'Not confirmed / no current presence' }}</td>
+            <td>
+              {{ visit.publishedCount }} / {{ visit.orderCount }} returned
+              @if (visit.unreadCount) {
+                <small>{{ visit.unreadCount }} to review</small>
+              }
+            </td>
+            <td>{{ visit.createdAt | date: 'dd/MM HH:mm' }}</td>
+            <td><a mat-button [routerLink]="['/care', visit.id]">Open visit</a></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else if (mode() === 'tasks') {
+    <table>
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Work requested</th>
+          <th>Destination</th>
+          <th>Presence</th>
+          <th>Work status</th>
+          <th>Requested</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (task of taskRows(); track task.id) {
+          <tr>
+            <td>
+              <strong>{{ task.patientName }}</strong>
+              <small>{{ task.patientId }} · {{ patientStatus(task.patientStatus) }}</small>
+            </td>
+            <td>{{ task.serviceName || 'Examination / return to doctor' }}</td>
+            <td>{{ task.pointName }}</td>
+            <td>
+              <span class="badge" [class.arrived]="['ARRIVED', 'CALLED'].includes(task.arrival)">
+                {{ label(task.arrival) }}
+              </span>
+            </td>
+            <td>{{ label(task.status) }}</td>
+            <td>{{ task.createdAt | date: 'dd/MM HH:mm' }}</td>
+            <td><a mat-button [routerLink]="['/care', task.visitId]">Receive / handle</a></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Department</th>
+          <th>Responsible doctor</th>
+          <th>Bed room</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (patient of inpatientRows(); track patient.admissionId) {
+          <tr>
+            <td>
+              <strong>{{ patient.patientName }}</strong>
+              <small>{{ patient.patientId }} · Admitted</small>
+            </td>
+            <td>{{ patient.departmentName }}</td>
+            <td>{{ patient.doctorName }}</td>
+            <td>{{ patient.roomName || 'Awaiting bed assignment' }}</td>
+            <td>
+              @if (patient.visitId) {
+                <a mat-button [routerLink]="['/care', patient.visitId]">Open inpatient care</a>
+              } @else if (canAdmit) {
+                <button mat-button (click)="adopt(patient)" [disabled]="!options()">
+                  Open care workspace
+                </button>
+              } @else {
+                <span>Ward reception can open the workspace</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+  @if (!loading() && !total() && !error()) {
+    <p class="empty">No patients or work items match these filters and your assignments.</p>
+  }
+</div>
+<div class="table-footer">
+  <small>
+    @if (updatedAt()) {
+      Updated {{ updatedAt() | date: 'HH:mm:ss' }} · refreshes every 10 seconds
+    }
+  </small>
+  <mat-paginator
+    [length]="total()"
+    [pageIndex]="page()"
+    [pageSize]="pageSize()"
+    [pageSizeOptions]="[10, 20, 50]"
+    (page)="paginate($event)"
+    aria-label="Care worklist pages"
+  />
+</div>

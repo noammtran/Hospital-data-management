@@ -31,7 +31,7 @@ export abstract class BaseToken {
   }
 
   needRefresh() {
-    return this.exp !== undefined && this.exp >= 0;
+    return !!this.refresh_token && this.exp !== undefined && this.exp >= 0;
   }
 
   getRefreshTime() {

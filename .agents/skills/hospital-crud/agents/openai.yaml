@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hospital CRUD"
+  short_description: "Implement verified hospital CRUD vertical slices"
+  default_prompt: "Use $hospital-crud to implement and verify a patient-management CRUD change end to end."

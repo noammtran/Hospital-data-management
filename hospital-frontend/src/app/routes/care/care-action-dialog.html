@@ -1,0 +1,160 @@
+<h2 mat-dialog-title>{{ title }}</h2>
+<form (ngSubmit)="submit()" [formGroup]="form">
+  <mat-dialog-content>
+    @if (data.detail) {
+      <p class="patient-context">
+        {{ data.detail.visit.patientName }} · {{ data.detail.visit.patientId }}
+      </p>
+    }
+    @if (data.task) {
+      <p>{{ data.task.serviceName || 'Examination' }} · {{ data.task.pointName }}</p>
+    }
+    @if (data.handoff) {
+      <p>
+        {{ data.handoff.fromUser }} → {{ data.handoff.toUser }}
+        <br />
+        {{ data.handoff.reason }}
+      </p>
+    }
+    @if (data.action === 'REGISTER' && !data.patient) {
+      <div class="search-row">
+        <mat-form-field>
+          <mat-label>Find patient by</mat-label>
+          <mat-select [formControl]="searchField">
+            <mat-option value="name">Name</mat-option>
+            <mat-option value="id">Patient ID</mat-option>
+            <mat-option value="identity">Identity number</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Search existing records</mat-label>
+          <input matInput [formControl]="search" maxlength="100" />
+        </mat-form-field>
+      </div>
+      <p class="hint">
+        Check identity before selecting a record.
+        {{
+          searching()
+            ? 'Searching…'
+            : 'Up to 20 matching records shown. Refine the search if needed.'
+        }}
+      </p>
+    }
+    @if (['FINISH', 'DISCHARGE'].includes(data.action)) {
+      <p class="hint">
+        Review published results before completion. Pending services require a follow-up plan and a
+        future review time. The current doctor remains responsible.
+      </p>
+    }
+    @if (data.action === 'ACCEPT_ADMISSION') {
+      <p class="hint">
+        Confirm that the ward has received the patient. This starts inpatient care and hands
+        remaining work to the selected doctor.
+      </p>
+    }
+    @if (result && ['PUBLISH', 'ACKNOWLEDGE'].includes(data.action)) {
+      <section class="result-preview">
+        <strong>Revision {{ result.revision }} {{ result.critical ? '· Critical' : '' }}</strong>
+        <p>{{ result.body }}</p>
+        @if (result.correctionReason) {
+          <p>Correction: {{ result.correctionReason }}</p>
+        }
+      </section>
+    }
+    @for (field of fields; track field.key) {
+      @if (field.type === 'check') {
+        <mat-checkbox [formControlName]="field.key">{{ field.label }}</mat-checkbox>
+      } @else {
+        <mat-form-field appearance="outline">
+          <mat-label>{{ field.label }}</mat-label>
+          @if (field.type === 'select' || field.type === 'multi') {
+            <mat-select [formControlName]="field.key" [multiple]="field.type === 'multi'">
+              @if (!field.required && field.type === 'select') {
+                <mat-option [value]="null">Not assigned</mat-option>
+              }
+              @for (option of choices(field); track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          } @else if (field.type === 'textarea') {
+            <textarea
+              matInput
+              [formControlName]="field.key"
+              rows="3"
+              [maxlength]="field.max ?? 4000"
+            ></textarea>
+          } @else {
+            <input
+              matInput
+              [formControlName]="field.key"
+              [type]="field.type"
+              [attr.maxlength]="field.max || null"
+            />
+          }
+          <mat-error>
+            Enter a valid {{ field.label.toLowerCase()
+            }}{{ field.max ? ' (maximum ' + field.max + ' characters)' : '' }}.
+          </mat-error>
+        </mat-form-field>
+      }
+    }
+    @if (data.action === 'DIAGNOSIS') {
+      <h3>Prescription (optional)</h3>
+      <mat-form-field>
+        <mat-label>Find a medicine</mat-label>
+        <input matInput [formControl]="medicineTerm" maxlength="100" />
+      </mat-form-field>
+      @for (row of prescriptionRows.controls; track row; let i = $index) {
+        <section class="prescription" [formGroup]="row">
+          <mat-form-field>
+            <mat-label>Medicine {{ i + 1 }}</mat-label>
+            <mat-select formControlName="medicineId">
+              <mat-option [value]="null">No medicine</mat-option>
+              @for (medicine of medicines(); track medicine.id) {
+                <mat-option [value]="medicine.id">{{ medicine.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <div class="search-row">
+            <mat-form-field>
+              <mat-label>Dosage</mat-label>
+              <input matInput formControlName="dosage" maxlength="100" />
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Frequency</mat-label>
+              <input matInput formControlName="frequency" maxlength="100" />
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Duration</mat-label>
+              <input matInput formControlName="duration" maxlength="50" />
+            </mat-form-field>
+          </div>
+          <mat-form-field>
+            <mat-label>Instructions</mat-label>
+            <textarea matInput formControlName="instructions" maxlength="500"></textarea>
+          </mat-form-field>
+          <button mat-button type="button" (click)="removePrescription(i)">
+            Remove medicine {{ i + 1 }}
+          </button>
+        </section>
+      }
+      <button
+        mat-stroked-button
+        type="button"
+        (click)="addPrescription()"
+        [disabled]="prescriptionRows.length >= 30"
+      >
+        Add medicine
+      </button>
+    }
+    @if (error()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close [disabled]="saving()">Cancel</button>
+    <button mat-flat-button type="submit" [disabled]="saving()">
+      {{ saving() ? 'Saving…' : 'Confirm' }}
+    </button>
+  </mat-dialog-actions>
+</form>

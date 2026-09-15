@@ -1,15 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject } from '@angular/core';
-import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { Router, RouterLink } from '@angular/router';
-import { MtxButtonModule } from '@ng-matero/extensions/button';
+import { Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
-import { filter } from 'rxjs/operators';
+import { finalize } from 'rxjs/operators';
 
 import { AuthService } from '@core/authentication';
 
@@ -18,15 +16,11 @@ import { AuthService } from '@core/authentication';
   templateUrl: './login.html',
   styleUrl: './login.scss',
   imports: [
-    FormsModule,
     ReactiveFormsModule,
-    RouterLink,
     MatButtonModule,
     MatCardModule,
-    MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
-    MtxButtonModule,
     TranslateModule,
   ],
 })
@@ -35,12 +29,12 @@ export class Login {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
 
-  isSubmitting = false;
+  readonly isSubmitting = signal(false);
+  readonly loginError = signal('');
 
   loginForm = this.fb.nonNullable.group({
-    username: ['ng-matero', [Validators.required]],
-    password: ['ng-matero', [Validators.required]],
-    rememberMe: [false],
+    username: ['', [Validators.required, Validators.maxLength(30)]],
+    password: ['', [Validators.required, Validators.maxLength(72)]],
   });
 
   get username() {
@@ -51,31 +45,38 @@ export class Login {
     return this.loginForm.get('password')!;
   }
 
-  get rememberMe() {
-    return this.loginForm.get('rememberMe')!;
-  }
-
   login() {
-    this.isSubmitting = true;
+    if (this.loginForm.invalid || this.isSubmitting()) {
+      this.loginForm.markAllAsTouched();
+      return;
+    }
+
+    this.loginError.set('');
+    this.isSubmitting.set(true);
 
     this.auth
-      .login(this.username.value, this.password.value, this.rememberMe.value)
-      .pipe(filter(authenticated => authenticated))
+      .login(this.username.value, this.password.value)
+      .pipe(finalize(() => this.isSubmitting.set(false)))
       .subscribe({
-        next: () => {
-          this.router.navigateByUrl('/');
+        next: authenticated => {
+          if (authenticated) {
+            this.router.navigateByUrl(this.auth.landingPath());
+          }
         },
         error: (errorRes: HttpErrorResponse) => {
-          if (errorRes.status === 422) {
-            const form = this.loginForm;
-            const errors = errorRes.error.errors;
-            Object.keys(errors).forEach(key => {
-              form.get(key === 'email' ? 'username' : key)?.setErrors({
-                remote: errors[key][0],
-              });
+          const errors = errorRes.error?.errors as Record<string, string> | undefined;
+          if (errorRes.status === 401) {
+            // Credentials are validated as a pair. Invalidating the username
+            // would prevent a retry when only the password is corrected.
+            this.loginError.set(errorRes.error?.message || 'Invalid credentials');
+          } else if (errors && Object.keys(errors).length > 0) {
+            Object.entries(errors).forEach(([key, message]) => {
+              const control = this.loginForm.get(key);
+              control?.setErrors({ ...control.errors, remote: message });
             });
+          } else {
+            this.loginError.set(errorRes.error?.message || 'Unable to sign in. Please try again.');
           }
-          this.isSubmitting = false;
         },
       });
   }

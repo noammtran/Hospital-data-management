@@ -1,20 +1,29 @@
-<div class="d-flex w-full h-full">
-  <mat-card class="m-auto" style="max-width: 380px">
-    <mat-card-header class="m-b-24">
-      <mat-card-title>👋 {{ 'login_title' | translate }}!</mat-card-title>
-    </mat-card-header>
-
+<main class="login-page">
+  <mat-card class="login-card">
     <mat-card-content>
-      <form class="form-field-full" [formGroup]="loginForm">
+      <header class="login-header">
+        <h1 class="login-title">{{ 'login_title' | translate }}</h1>
+        <p class="login-subtitle">Hospital Patient Management System</p>
+      </header>
+
+      <form class="login-form form-field-full" [formGroup]="loginForm" (ngSubmit)="login()">
         <mat-form-field appearance="outline">
-          <mat-label>{{ 'username' | translate }}: ng-matero</mat-label>
-          <input matInput placeholder="ng-matero" formControlName="username" required />
+          <mat-label>{{ 'username' | translate }}</mat-label>
+          <input
+            matInput
+            autocomplete="username"
+            autocapitalize="none"
+            formControlName="username"
+            maxlength="30"
+            spellcheck="false"
+            required
+          />
           @if (username.invalid) {
             <mat-error>
               @if (username.errors?.['required']) {
                 <span>
                   {{ 'please_enter' | translate }}
-                  <strong>ng-matero</strong>
+                  <strong>{{ 'username' | translate }}</strong>
                 </span>
               }
               @if (username.errors?.['remote']) {
@@ -25,12 +34,13 @@
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>{{ 'password' | translate }}: ng-matero</mat-label>
+          <mat-label>{{ 'password' | translate }}</mat-label>
           <input
             matInput
-            placeholder="ng-matero"
+            autocomplete="current-password"
             type="password"
             formControlName="password"
+            maxlength="72"
             required
           />
           @if (password.invalid) {
@@ -38,7 +48,7 @@
               @if (password.errors?.['required']) {
                 <span>
                   {{ 'please_enter' | translate }}
-                  <strong>ng-matero</strong>
+                  <strong>{{ 'password' | translate }}</strong>
                 </span>
               }
               @if (password.errors?.['remote']) {
@@ -48,23 +58,23 @@
           }
         </mat-form-field>
 
-        <mat-checkbox formControlName="rememberMe">{{ 'remember_me' | translate }}</mat-checkbox>
+        @if (loginError()) {
+          <p class="login-error" role="alert">{{ loginError() }}</p>
+        }
 
         <button
-          class="w-full m-y-16"
-          matButton="filled"
-          [disabled]="!!loginForm.invalid"
-          [loading]="isSubmitting"
-          (click)="login()"
+          type="submit"
+          class="login-submit"
+          mat-flat-button
+          [disabled]="loginForm.invalid || isSubmitting()"
+          [attr.aria-busy]="isSubmitting()"
         >
           {{ 'login' | translate }}
+          @if (isSubmitting()) {
+            …
+          }
         </button>
-
-        <div>
-          <span>{{ 'have_no_account' | translate }}?</span>
-          <a routerLink="/auth/register">{{ 'create_one_account' | translate }}</a>
-        </div>
       </form>
     </mat-card-content>
   </mat-card>
-</div>
+</main>

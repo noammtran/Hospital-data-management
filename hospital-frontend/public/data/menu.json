@@ -1,22 +1,43 @@
 {
   "menu": [
     {
+      "route": "care", "name": "care", "type": "link", "icon": "local_hospital",
+      "permissions": { "only": "CARE_VIEW" }
+    },
+    {
+      "route": "my-record",
+      "name": "my-record",
+      "type": "link",
+      "icon": "badge",
+      "permissions": { "only": "VIEW_OWN_RECORD" }
+    },
+    {
       "route": "patients",
       "name": "patients",
       "type": "link",
-      "icon": "assignment_ind"
+      "icon": "assignment_ind",
+      "permissions": { "only": "VIEW_PATIENT" }
     },
     {
-      "route": "patient-history",
-      "name": "patient-history",
+      "route": "audit-log",
+      "name": "audit-log",
       "type": "link",
-      "icon": "history"
+      "icon": "history",
+      "permissions": { "only": "VIEW_AUDIT_LOG" }
     },
     {
       "route": "statistics",
       "name": "statistics",
       "type": "link",
-      "icon": "bar_chart"
+      "icon": "bar_chart",
+      "permissions": { "only": "VIEW_STATISTICS" }
+    },
+    {
+      "route": "users",
+      "name": "users",
+      "type": "link",
+      "icon": "manage_accounts",
+      "permissions": { "only": "MANAGE_USERS" }
     }
   ]
 }

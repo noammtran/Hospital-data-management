@@ -14,7 +14,6 @@ import { PatientService } from './patient.service';
 import {
   BLOOD_TYPE_OPTIONS,
   GENDER_OPTIONS,
-  PATIENT_STATUS_OPTIONS,
   PatientDetail,
   PatientPayload,
 } from './patient.models';
@@ -45,10 +44,10 @@ export class PatientFormDialog {
   private readonly data = inject<PatientFormDialogData>(MAT_DIALOG_DATA);
 
   readonly genderOptions = GENDER_OPTIONS;
-  readonly statusOptions = PATIENT_STATUS_OPTIONS;
   readonly bloodTypeOptions = BLOOD_TYPE_OPTIONS;
 
   readonly isEdit = !!this.data.patient;
+  readonly identityRequired = !this.isEdit || !!this.data.patient?.identityNo;
   readonly saving = signal(false);
   readonly today = new Date();
 
@@ -59,7 +58,13 @@ export class PatientFormDialog {
     address: ['', Validators.maxLength(255)],
     phoneNo: ['', Validators.maxLength(20)],
     email: ['', [Validators.email, Validators.maxLength(50)]],
-    identityNo: ['', Validators.maxLength(20)],
+    identityNo: [
+      '',
+      [
+        ...(this.identityRequired ? [Validators.required] : []),
+        Validators.pattern(/^\d{12}$/),
+      ],
+    ],
     bloodType: [null as number | null],
     allergies: ['', Validators.maxLength(500)],
     medicalHistory: ['', Validators.maxLength(1000)],
@@ -68,7 +73,6 @@ export class PatientFormDialog {
     emergencyContactName: ['', Validators.maxLength(100)],
     emergencyContactPhone: ['', Validators.maxLength(20)],
     emergencyContactRelation: ['', Validators.maxLength(50)],
-    status: [0, Validators.required],
     note: ['', Validators.maxLength(1000)],
   });
 
@@ -117,7 +121,6 @@ export class PatientFormDialog {
       note: v.note?.trim() || null,
       birthDate: v.birthDate ? format(v.birthDate, 'yyyy-MM-dd') : null,
       insuranceExpiry: v.insuranceExpiry ? format(v.insuranceExpiry, 'yyyy-MM-dd') : null,
-      status: v.status ?? 0,
     };
 
     this.saving.set(true);
@@ -127,7 +130,11 @@ export class PatientFormDialog {
 
     request$.subscribe({
       next: () => {
-        this.toast.success(this.isEdit ? 'Patient updated' : 'Patient created');
+        this.toast.success(
+          this.isEdit
+            ? 'Patient updated'
+            : 'Patient and self-service account created. A password change is required at first sign-in.'
+        );
         this.dialogRef.close(true);
       },
       error: (err: HttpErrorResponse) => {
@@ -162,6 +169,9 @@ export class PatientFormDialog {
     }
     if (control.hasError('email')) {
       return 'Invalid email format';
+    }
+    if (control.hasError('pattern') && controlName === 'identityNo') {
+      return 'Enter exactly 12 digits';
     }
     if (control.hasError('matDatepickerMax')) {
       return 'Date of birth cannot be in the future';

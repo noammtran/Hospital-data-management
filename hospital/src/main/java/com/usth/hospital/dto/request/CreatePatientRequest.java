@@ -4,8 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
@@ -31,7 +31,8 @@ public record CreatePatientRequest(
         @Size(max = 50)
         String email,
 
-        @Size(max = 20)
+        @NotBlank(message = "Identity card number is required for the patient account")
+        @Pattern(regexp = "^[0-9]{12}$", message = "Identity card number must contain exactly 12 digits")
         String identityNo,
 
         @Min(1) @Max(8)
@@ -56,10 +57,6 @@ public record CreatePatientRequest(
 
         @Size(max = 50)
         String emergencyContactRelation,
-
-        @NotNull
-        @Min(0) @Max(3)
-        Integer status,
 
         @Size(max = 1000)
         String note

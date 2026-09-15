@@ -1,6 +1,6 @@
 @use 'sass:map';
 
-// It makes the value negative.
+// make value negative
 @function negativify-map($map) {
   $result: ();
 
@@ -13,7 +13,7 @@
   @return $result;
 }
 
-// It allows to combine multiple maps together.
+// combine multiple maps together
 @function map-collect($maps...) {
   $collection: ();
 

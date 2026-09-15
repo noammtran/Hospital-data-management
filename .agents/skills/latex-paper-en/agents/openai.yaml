@@ -1,0 +1,4 @@
+interface:
+  display_name: "LaTeX Paper EN"
+  short_description: "Repair and improve English LaTeX papers"
+  default_prompt: "Use $latex-paper-en to inspect this English LaTeX paper and apply the smallest relevant review or repair workflow."

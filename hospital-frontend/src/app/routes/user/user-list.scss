@@ -1,0 +1,38 @@
+.user-page-header {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  color: var(--mat-sys-on-primary);
+  background: var(--mat-sys-primary);
+  border-radius: var(--mat-sys-corner-medium);
+
+  h1,
+  p {
+    margin: 0;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 400;
+  }
+
+  p {
+    margin-top: 0.25rem;
+    opacity: 0.88;
+  }
+}
+
+.user-filters {
+  align-items: start;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+}
+
+@media (width >= 768px) {
+  .filter-actions {
+    justify-content: flex-end;
+  }
+}

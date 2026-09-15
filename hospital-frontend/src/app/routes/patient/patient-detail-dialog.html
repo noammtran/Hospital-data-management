@@ -8,127 +8,188 @@
   } @else if (patient(); as p) {
     <h3 class="section-title">Personal information</h3>
     <div class="detail-grid">
-      <div class="item"><span class="label">Patient ID</span><span class="value">{{ p.id }}</span></div>
-      <div class="item"><span class="label">Full name</span><span class="value">{{ p.name }}</span></div>
+      <div class="item">
+        <span class="label">Patient ID</span>
+        <span class="value">{{ p.id }}</span>
+      </div>
+      <div class="item">
+        <span class="label">Full name</span>
+        <span class="value">{{ p.name }}</span>
+      </div>
       <div class="item">
         <span class="label">Date of birth</span>
-        <span class="value">{{ (p.birthDate | date: 'dd/MM/yyyy') || '—' }}</span>
+        <span class="value">{{ (p.birthDate | date: 'dd/MM/yyyy') || 'Not recorded' }}</span>
       </div>
-      <div class="item"><span class="label">Gender</span><span class="value">{{ genderLabel(p.gender) }}</span></div>
-      <div class="item"><span class="label">ID card number</span><span class="value">{{ p.identityNo || '—' }}</span></div>
-      <div class="item"><span class="label">Phone number</span><span class="value">{{ p.phoneNo || '—' }}</span></div>
-      <div class="item"><span class="label">Email</span><span class="value">{{ p.email || '—' }}</span></div>
-      <div class="item full"><span class="label">Address</span><span class="value">{{ p.address || '—' }}</span></div>
+      <div class="item">
+        <span class="label">Gender</span>
+        <span class="value">{{ genderLabel(p.gender) }}</span>
+      </div>
+      <div class="item">
+        <span class="label">ID card number</span>
+        <span class="value">{{ p.identityNo || 'Not recorded' }}</span>
+      </div>
+      <div class="item">
+        <span class="label">Phone number</span>
+        <span class="value">{{ p.phoneNo || 'Not recorded' }}</span>
+      </div>
+      <div class="item">
+        <span class="label">Email</span>
+        <span class="value">{{ p.email || 'Not recorded' }}</span>
+      </div>
+      <div class="item full">
+        <span class="label">Address</span>
+        <span class="value">{{ p.address || 'Not recorded' }}</span>
+      </div>
     </div>
 
     <h3 class="section-title">Medical information</h3>
+    @if (canUseCare) {
+      <div class="workflow-actions">
+        <a
+          mat-flat-button
+          mat-dialog-close
+          [routerLink]="activeCareId() ? ['/care', activeCareId()] : ['/care']"
+          [queryParams]="activeCareId() ? {} : { patientId: p.id }"
+        >
+          {{ activeCareId() ? 'Open active care visit' : 'Care visits / register examination' }}
+        </a>
+      </div>
+    }
     <div class="detail-grid">
-      <div class="item"><span class="label">Blood type</span><span class="value">{{ bloodTypeLabel(p.bloodType) }}</span></div>
-      <div class="item"><span class="label">Status</span><span class="value">{{ statusLabel(p.status) }}</span></div>
-      <div class="item full"><span class="label">Allergies</span><span class="value">{{ p.allergies || '—' }}</span></div>
-      <div class="item full"><span class="label">Medical history</span><span class="value">{{ p.medicalHistory || '—' }}</span></div>
+      <div class="item">
+        <span class="label">Blood type</span>
+        <span class="value">{{ bloodTypeLabel(p.bloodType) }}</span>
+      </div>
+      <div class="item">
+        <span class="label">Status</span>
+        <span class="value">{{ statusLabel(p.status) }}</span>
+      </div>
+      <div class="item full">
+        <span class="label">Allergies</span>
+        <span class="value">{{ p.allergies || 'Not recorded' }}</span>
+      </div>
+      <div class="item full">
+        <span class="label">Medical history</span>
+        <span class="value">{{ p.medicalHistory || 'Not recorded' }}</span>
+      </div>
     </div>
-
     <h3 class="section-title">Health insurance</h3>
     <div class="detail-grid">
-      <div class="item"><span class="label">Insurance number</span><span class="value">{{ p.insuranceNo || '—' }}</span></div>
+      <div class="item">
+        <span class="label">Insurance number</span>
+        <span class="value">{{ p.insuranceNo || 'Not recorded' }}</span>
+      </div>
       <div class="item">
         <span class="label">Insurance expiry</span>
-        <span class="value">{{ (p.insuranceExpiry | date: 'dd/MM/yyyy') || '—' }}</span>
+        <span class="value">{{ (p.insuranceExpiry | date: 'dd/MM/yyyy') || 'Not recorded' }}</span>
       </div>
     </div>
 
     <h3 class="section-title">Emergency contact</h3>
     <div class="detail-grid">
-      <div class="item"><span class="label">Contact name</span><span class="value">{{ p.emergencyContactName || '—' }}</span></div>
-      <div class="item"><span class="label">Contact phone</span><span class="value">{{ p.emergencyContactPhone || '—' }}</span></div>
-      <div class="item"><span class="label">Relationship</span><span class="value">{{ p.emergencyContactRelation || '—' }}</span></div>
+      <div class="item">
+        <span class="label">Contact name</span>
+        <span class="value">{{ p.emergencyContactName || 'Not recorded' }}</span>
+      </div>
+      <div class="item">
+        <span class="label">Contact phone</span>
+        <span class="value">{{ p.emergencyContactPhone || 'Not recorded' }}</span>
+      </div>
+      <div class="item">
+        <span class="label">Relationship</span>
+        <span class="value">{{ p.emergencyContactRelation || 'Not recorded' }}</span>
+      </div>
     </div>
 
     <h3 class="section-title">Note &amp; system</h3>
     <div class="detail-grid">
-      <div class="item full"><span class="label">Note</span><span class="value">{{ p.note || '—' }}</span></div>
+      <div class="item full">
+        <span class="label">Note</span>
+        <span class="value">{{ p.note || 'Not recorded' }}</span>
+      </div>
       <div class="item">
         <span class="label">Created by</span>
-        <span class="value">{{ p.createdBy }} — {{ p.createdDate | date: 'dd/MM/yyyy' }}</span>
+        <span class="value">{{ p.createdBy }} on {{ p.createdDate | date: 'dd/MM/yyyy' }}</span>
       </div>
       <div class="item">
         <span class="label">Last updated</span>
-        <span class="value">{{ p.lastUpdatedBy }} — {{ p.lastUpdatedDate | date: 'dd/MM/yyyy' }}</span>
+        <span class="value">
+          {{ p.lastUpdatedBy }} on {{ p.lastUpdatedDate | date: 'dd/MM/yyyy' }}
+        </span>
       </div>
     </div>
 
-    <h3 class="section-title">Medical record</h3>
-    @if (visitsLoading()) {
-      <div class="d-flex justify-content-center p-y-16"><mat-spinner diameter="28" /></div>
-    } @else if (visits().length === 0) {
-      <p class="empty-record">No visits recorded for this patient.</p>
-    } @else {
-      <mat-accordion multi>
-        @for (v of visits(); track v.admissionId) {
-          <mat-expansion-panel>
-            <mat-expansion-panel-header>
-              <mat-panel-title>{{ v.admissionDate | date: 'dd/MM/yyyy' }} — {{ v.departmentName }}</mat-panel-title>
-              <mat-panel-description>{{ v.doctorName }}</mat-panel-description>
-            </mat-expansion-panel-header>
-
-            <div class="detail-grid">
-              <div class="item"><span class="label">Admission date</span><span class="value">{{ v.admissionDate | date: 'dd/MM/yyyy' }}</span></div>
-              <div class="item"><span class="label">Discharge date</span><span class="value">{{ (v.dischargeDate | date: 'dd/MM/yyyy') || '—' }}</span></div>
-              <div class="item"><span class="label">Department</span><span class="value">{{ v.departmentName }}</span></div>
-              <div class="item"><span class="label">Doctor</span><span class="value">{{ v.doctorName }}</span></div>
-              <div class="item"><span class="label">Room</span><span class="value">{{ v.roomName || '—' }}</span></div>
-              <div class="item"><span class="label">Type</span><span class="value">{{ admissionTypeLabel(v.type) }}</span></div>
-              <div class="item"><span class="label">Status</span><span class="value">{{ admissionStatusLabel(v.status) }}</span></div>
-              <div class="item full"><span class="label">Reason</span><span class="value">{{ v.reason || '—' }}</span></div>
-            </div>
-
-            <h4 class="record-subtitle">Diagnoses</h4>
-            @if (v.diagnoses.length === 0) {
-              <p class="empty-record">None.</p>
-            } @else {
-              <table class="record-table">
-                <thead>
-                  <tr><th>Date</th><th>ICD-10</th><th>Description</th><th>Severity</th><th>Doctor</th></tr>
-                </thead>
-                <tbody>
-                  @for (d of v.diagnoses; track $index) {
-                    <tr>
-                      <td>{{ d.date | date: 'dd/MM/yyyy' }}</td>
-                      <td>{{ d.icdCode || '—' }}</td>
-                      <td>{{ d.description }}</td>
-                      <td>{{ severityLabel(d.severity) }}</td>
-                      <td>{{ d.doctorName }}</td>
-                    </tr>
+    @if (canViewMedicalRecord) {
+      <h3 class="section-title">Examination and treatment record</h3>
+      <p class="admission-note">
+        Each entry brings together the visit, diagnoses, prescriptions and related inpatient stay.
+        Clinical work is recorded in the care workspace.
+      </p>
+      @if (visitsLoading()) {
+        <div class="d-flex justify-content-center p-y-16"><mat-spinner diameter="28" /></div>
+      } @else if (visitsError()) {
+        <p role="alert">{{ visitsError() }}</p>
+        <button mat-button (click)="loadMedicalRecord()">Retry</button>
+      } @else if (visits().length === 0) {
+        <p class="empty-record">
+          No examination or treatment records are available to your account.
+        </p>
+      } @else {
+        <mat-accordion multi>
+          @for (v of visits(); track recordKey(v)) {
+            <mat-expansion-panel>
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  {{ recordStart(v) | date: 'dd/MM/yyyy' }} at
+                  {{ v.care?.pointName || v.departmentName }}
+                </mat-panel-title>
+                <mat-panel-description>
+                  {{ v.care?.doctorName || v.doctorName }}
+                </mat-panel-description>
+              </mat-expansion-panel-header>
+              <app-medical-record [record]="v" />
+              <div class="record-actions">
+                @if (canUseCare && v.care) {
+                  <a mat-button mat-dialog-close [routerLink]="['/care', v.care.id]">
+                    Open care workspace
+                  </a>
+                } @else if (canUseCare && v.admissionId && !v.dischargeDate && p.status === 2) {
+                  <a
+                    mat-button
+                    mat-dialog-close
+                    routerLink="/care"
+                    [queryParams]="{ patientId: p.id, mode: 'inpatients' }"
+                  >
+                    Continue inpatient care
+                  </a>
+                }
+                @if (canManageExistingEpisode(v)) {
+                  @if (canUpdateAdmission) {
+                    <button mat-button (click)="editAdmission(v)">Update existing episode</button>
                   }
-                </tbody>
-              </table>
-            }
-
-            <h4 class="record-subtitle">Prescriptions</h4>
-            @if (v.prescriptions.length === 0) {
-              <p class="empty-record">None.</p>
-            } @else {
-              <table class="record-table">
-                <thead>
-                  <tr><th>Medicine</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Instructions</th></tr>
-                </thead>
-                <tbody>
-                  @for (pr of v.prescriptions; track $index) {
-                    <tr>
-                      <td>{{ pr.medicineName }}</td>
-                      <td>{{ pr.dosage }}</td>
-                      <td>{{ pr.frequency }}</td>
-                      <td>{{ pr.duration }}</td>
-                      <td>{{ pr.instructions || '—' }}</td>
-                    </tr>
+                  @if (canDischargeAdmission) {
+                    <button mat-button (click)="dischargeAdmission(v)">
+                      Complete existing episode
+                    </button>
                   }
-                </tbody>
-              </table>
-            }
-          </mat-expansion-panel>
-        }
-      </mat-accordion>
+                }
+                @if (canDeleteAdmission && v.admissionId && (!v.care || v.care.closedAt)) {
+                  <button
+                    mat-button
+                    color="warn"
+                    [disabled]="deletingAdmissionId() === v.admissionId"
+                    (click)="deleteAdmission(v)"
+                  >
+                    {{
+                      deletingAdmissionId() === v.admissionId ? 'Deleting...' : 'Delete admission'
+                    }}
+                  </button>
+                }
+              </div>
+            </mat-expansion-panel>
+          }
+        </mat-accordion>
+      }
     }
   } @else {
     <p>Failed to load patient data.</p>

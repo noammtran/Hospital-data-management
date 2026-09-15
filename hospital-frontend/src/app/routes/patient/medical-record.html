@@ -1,0 +1,212 @@
+@let v = record();
+@if (v.care; as care) {
+  <section class="summary" aria-label="Examination and treatment summary">
+    <h4>
+      {{
+        care.closedAt && care.status === 'COMPLETED'
+          ? 'Examination / treatment summary'
+          : care.closedAt
+            ? 'Visit summary'
+            : 'Current clinical assessment'
+      }}
+    </h4>
+    <dl>
+      <div>
+        <dt>Progress</dt>
+        <dd>{{ label(care.status) }}</dd>
+      </div>
+      <div>
+        <dt>Responsible doctor</dt>
+        <dd>{{ care.doctorName || 'Not yet assigned' }}</dd>
+      </div>
+      <div>
+        <dt>Reason for visit</dt>
+        <dd>{{ care.complaint || 'Not recorded' }}</dd>
+      </div>
+      <div>
+        <dt>Conclusion</dt>
+        <dd>{{ care.conclusion || 'No conclusion recorded' }}</dd>
+      </div>
+      <div>
+        <dt>Treatment plan / instructions</dt>
+        <dd>{{ care.plan || 'Not recorded' }}</dd>
+      </div>
+      @if (care.outcome) {
+        <div>
+          <dt>Outcome</dt>
+          <dd>{{ label(care.outcome) }}</dd>
+        </div>
+      }
+      @if (care.closedAt) {
+        <div>
+          <dt>Visit ended</dt>
+          <dd>{{ care.closedAt | date: 'dd/MM/yyyy HH:mm' }}</dd>
+        </div>
+      }
+      @if (care.followupPlan) {
+        <div>
+          <dt>Follow-up plan</dt>
+          <dd>{{ care.followupPlan }}</dd>
+        </div>
+        <div>
+          <dt>Follow-up time</dt>
+          <dd>{{ care.followupAt | date: 'dd/MM/yyyy HH:mm' }}</dd>
+        </div>
+      }
+    </dl>
+  </section>
+} @else {
+  <p class="muted">Historical treatment record. A separate care conclusion was not recorded.</p>
+}
+
+<h4>Diagnoses</h4>
+@for (d of v.diagnoses; track $index) {
+  <article class="entry">
+    <strong>{{ d.description }}</strong>
+    <p>{{ d.icdCode || 'No ICD code' }} · {{ d.date | date: 'dd/MM/yyyy' }} · {{ d.doctorName }}</p>
+    @if (d.severity) {
+      <small>{{ lookup(severities, d.severity) }}</small>
+    }
+  </article>
+} @empty {
+  <p class="muted">No diagnoses available in this record.</p>
+}
+
+<h4>Prescriptions</h4>
+@for (p of v.prescriptions; track $index) {
+  <article class="entry">
+    <strong>{{ p.medicineName }}</strong>
+    <dl>
+      <div>
+        <dt>Dosage</dt>
+        <dd>{{ p.dosage }}</dd>
+      </div>
+      <div>
+        <dt>Frequency</dt>
+        <dd>{{ p.frequency }}</dd>
+      </div>
+      <div>
+        <dt>Duration</dt>
+        <dd>{{ p.duration }}</dd>
+      </div>
+      @if (p.instructions) {
+        <div>
+          <dt>Instructions</dt>
+          <dd>{{ p.instructions }}</dd>
+        </div>
+      }
+    </dl>
+  </article>
+} @empty {
+  <p class="muted">No prescriptions available in this record.</p>
+}
+
+@if (v.admissionId) {
+  <h4>{{ v.care ? 'Inpatient stay' : 'Treatment episode' }}</h4>
+  <dl>
+    <div>
+      <dt>Department</dt>
+      <dd>{{ v.departmentName }}</dd>
+    </div>
+    <div>
+      <dt>Doctor</dt>
+      <dd>{{ v.doctorName }}</dd>
+    </div>
+    <div>
+      <dt>Bed room</dt>
+      <dd>{{ v.roomName || 'Not assigned' }}</dd>
+    </div>
+    <div>
+      <dt>Start date</dt>
+      <dd>{{ v.admissionDate | date: 'dd/MM/yyyy' }}</dd>
+    </div>
+    <div>
+      <dt>Discharge date</dt>
+      <dd>{{ (v.dischargeDate | date: 'dd/MM/yyyy') || 'Ongoing' }}</dd>
+    </div>
+    <div>
+      <dt>Type</dt>
+      <dd>{{ lookup(admissionTypes, v.type) || 'Not recorded' }}</dd>
+    </div>
+    <div>
+      <dt>Status</dt>
+      <dd>{{ lookup(admissionStatuses, v.status) || 'Not recorded' }}</dd>
+    </div>
+    @if (v.reason) {
+      <div>
+        <dt>Reason</dt>
+        <dd>{{ v.reason }}</dd>
+      </div>
+    }
+    @if (v.notes) {
+      <div>
+        <dt>Notes</dt>
+        <dd>{{ v.notes }}</dd>
+      </div>
+    }
+  </dl>
+}
+
+@if (v.care; as care) {
+  <h4>Services and results</h4>
+  @for (service of care.services; track service.id) {
+    <article class="entry">
+      <strong>{{ service.name }}</strong>
+      <span>· {{ label(service.status) }}</span>
+      @if (service.reason) {
+        <p>{{ service.reason }}</p>
+      }
+      @if (service.resolution) {
+        <p>Follow-up: {{ service.resolution }}</p>
+      }
+      @for (result of service.results; track result.id) {
+        <details class="result" [open]="$last">
+          <summary>
+            {{ resultLabel(service.results, result.revision) }} · Revision {{ result.revision }}
+          </summary>
+          <p class="clinical-text">{{ result.body }}</p>
+          @if (result.correctionReason) {
+            <p>Correction reason: {{ result.correctionReason }}</p>
+          }
+          <small>
+            Published {{ result.publishedAt | date: 'dd/MM/yyyy HH:mm' }} · {{ result.publishedBy }}
+          </small>
+          <p class="muted">
+            {{ result.readAt ? 'Reviewed by ' + result.readBy : 'Awaiting doctor review' }}
+          </p>
+        </details>
+      } @empty {
+        <p class="muted">No result available in this record.</p>
+      }
+    </article>
+  } @empty {
+    <p class="muted">No services available in this record.</p>
+  }
+  @if (care.notes.length || care.handoffs.length) {
+    <mat-expansion-panel class="clinical-history">
+      <mat-expansion-panel-header>
+        <mat-panel-title>Clinical progress and consultation</mat-panel-title>
+      </mat-expansion-panel-header>
+      @for (note of care.notes; track note.id) {
+        <article class="entry">
+          <strong>{{ label(note.kind) }} · {{ note.createdBy }}</strong>
+          <small>· {{ note.createdAt | date: 'dd/MM/yyyy HH:mm' }}</small>
+          <p class="clinical-text">{{ note.body }}</p>
+        </article>
+      }
+      @for (handoff of care.handoffs; track handoff.id) {
+        <article class="entry">
+          <strong>{{ label(handoff.kind) }} · {{ label(handoff.status) }}</strong>
+          <p>
+            {{ handoff.fromUser }} → {{ handoff.toUser }} ·
+            {{ handoff.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+          </p>
+          <p class="clinical-text">{{ handoff.reason }}</p>
+          @if (handoff.response) {
+            <p class="clinical-text">{{ handoff.response }}</p>
+          }
+        </article>
+      }
+    </mat-expansion-panel>
+  }
+}

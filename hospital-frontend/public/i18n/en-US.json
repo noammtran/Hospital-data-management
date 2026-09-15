@@ -1,9 +1,13 @@
 {
   "menu": {
+    "care": "Care workspace",
     "dashboard": "Dashboard",
+    "my-record": "My Record",
     "patients": "Patients",
     "patient-history": "Change History",
+    "audit-log": "Activity history",
     "statistics": "Statistics",
+    "users": "Staff accounts",
     "design": "Design",
     "design.colors": "Color System",
     "design.icons": "Material Icons",

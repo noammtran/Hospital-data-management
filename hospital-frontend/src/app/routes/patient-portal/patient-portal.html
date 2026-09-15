@@ -1,0 +1,147 @@
+<div class="portal-page">
+  <header class="portal-heading">
+    <div>
+      <h1>My health record</h1>
+      <p>
+        Your visits and treatment episodes are shown together. Clinical results become available
+        after the doctor concludes the visit and reviews the published results.
+      </p>
+    </div>
+    <span class="read-only-badge">
+      <mat-icon>lock</mat-icon>
+      Read only
+    </span>
+  </header>
+
+  @if (loading()) {
+    <mat-card><mat-progress-bar mode="indeterminate" aria-label="Loading your record" /></mat-card>
+  } @else if (errorMessage()) {
+    <div class="state-message" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      {{ errorMessage() }}
+    </div>
+  } @else if (record(); as data) {
+    <mat-card class="profile-card">
+      <mat-card-content>
+        <div class="card-heading">
+          <div>
+            <span class="eyebrow">Patient {{ data.patient.id }}</span>
+            <h2>{{ data.patient.name }}</h2>
+          </div>
+          <span class="status-badge">{{ patientStatusLabel(data.patient.status) }}</span>
+        </div>
+
+        <section aria-labelledby="personal-heading">
+          <h3 id="personal-heading">Personal information</h3>
+          <dl class="detail-grid">
+            <div>
+              <dt>Date of birth</dt>
+              <dd>{{ (data.patient.birthDate | date: 'dd/MM/yyyy') || 'Not recorded' }}</dd>
+            </div>
+            <div>
+              <dt>Gender</dt>
+              <dd>{{ genderLabel(data.patient.gender) }}</dd>
+            </div>
+            <div>
+              <dt>ID card number</dt>
+              <dd>{{ data.patient.identityNo }}</dd>
+            </div>
+            <div>
+              <dt>Phone number</dt>
+              <dd>{{ data.patient.phoneNo || 'Not recorded' }}</dd>
+            </div>
+            <div>
+              <dt>Email</dt>
+              <dd>{{ data.patient.email || 'Not recorded' }}</dd>
+            </div>
+            <div class="wide">
+              <dt>Address</dt>
+              <dd>{{ data.patient.address || 'Not recorded' }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section aria-labelledby="care-heading">
+          <h3 id="care-heading">Health and insurance information</h3>
+          <dl class="detail-grid">
+            <div>
+              <dt>Blood type</dt>
+              <dd>{{ bloodTypeLabel(data.patient.bloodType) }}</dd>
+            </div>
+            <div>
+              <dt>Insurance number</dt>
+              <dd>{{ data.patient.insuranceNo || 'Not recorded' }}</dd>
+            </div>
+            <div>
+              <dt>Insurance expiry</dt>
+              <dd>{{ (data.patient.insuranceExpiry | date: 'dd/MM/yyyy') || 'Not recorded' }}</dd>
+            </div>
+            <div class="wide">
+              <dt>Allergies</dt>
+              <dd>{{ data.patient.allergies || 'Not recorded' }}</dd>
+            </div>
+            <div class="wide">
+              <dt>Medical history</dt>
+              <dd>{{ data.patient.medicalHistory || 'Not recorded' }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section aria-labelledby="emergency-heading">
+          <h3 id="emergency-heading">Emergency contact</h3>
+          <dl class="detail-grid">
+            <div>
+              <dt>Name</dt>
+              <dd>{{ data.patient.emergencyContactName || 'Not recorded' }}</dd>
+            </div>
+            <div>
+              <dt>Phone number</dt>
+              <dd>{{ data.patient.emergencyContactPhone || 'Not recorded' }}</dd>
+            </div>
+            <div>
+              <dt>Relationship</dt>
+              <dd>{{ data.patient.emergencyContactRelation || 'Not recorded' }}</dd>
+            </div>
+          </dl>
+        </section>
+      </mat-card-content>
+    </mat-card>
+
+    <section class="admissions-section" aria-labelledby="records-heading">
+      <div class="section-heading">
+        <div>
+          <h2 id="records-heading">Examination and treatment record</h2>
+          <p>{{ data.records.length }} record{{ data.records.length === 1 ? '' : 's' }}</p>
+        </div>
+      </div>
+      @if (data.records.length === 0) {
+        <mat-card class="state-message">
+          <mat-icon>event_available</mat-icon>
+          No examination or treatment records have been recorded.
+        </mat-card>
+      } @else {
+        <mat-accordion multi>
+          @for (record of data.records; track recordKey(record)) {
+            <mat-expansion-panel>
+              <mat-expansion-panel-header>
+                <mat-panel-title class="record-title">
+                  <span>{{ record.care?.pointName || record.departmentName }}</span>
+                  <small>{{ recordStart(record) | date: 'dd/MM/yyyy' }}</small>
+                </mat-panel-title>
+              </mat-expansion-panel-header>
+              @if (record.care?.status === 'CANCELLED') {
+                <p>This visit was cancelled. No completed clinical summary is available.</p>
+              } @else if (
+                (record.care && record.care.status !== 'COMPLETED') ||
+                (!record.care && !record.dischargeDate)
+              ) {
+                <p>The clinical summary will be available after this episode is completed.</p>
+              }
+              <app-medical-record [record]="record" />
+            </mat-expansion-panel>
+          }
+        </mat-accordion>
+      }
+    </section>
+  }
+</div>

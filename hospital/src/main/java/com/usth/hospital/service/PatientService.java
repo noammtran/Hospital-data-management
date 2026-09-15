@@ -21,6 +21,12 @@ public interface PatientService {
 
     PatientDetailResponse update(String id, UpdatePatientRequest request);
 
+    PatientDetailResponse checkIn(String id);
+
+    PatientDetailResponse startExamination(String id);
+
+    PatientDetailResponse completeExamination(String id);
+
     void delete(String id);
 
     void bulkDelete(List<String> ids);

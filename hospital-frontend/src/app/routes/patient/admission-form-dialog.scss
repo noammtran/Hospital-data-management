@@ -1,0 +1,28 @@
+mat-dialog-content .row {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+.patient-context {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding-bottom: 12px;
+  margin: 0 0 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+
+  span {
+    color: rgba(0, 0, 0, 0.6);
+  }
+}
+
+.loading-options {
+  display: flex;
+  justify-content: center;
+  padding: 32px 0;
+}
+
+.options-error {
+  margin: 12px 0;
+  color: rgba(0, 0, 0, 0.6);
+}

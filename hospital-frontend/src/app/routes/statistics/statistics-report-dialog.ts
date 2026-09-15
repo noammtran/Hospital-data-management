@@ -3,6 +3,8 @@ import { Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 
+import { StatisticsSummary } from './statistics.models';
+
 export interface StatisticsReportCriterion {
   label: string;
   value: string;
@@ -14,6 +16,7 @@ export interface StatisticsReportData {
   intro: string;
   criteria: StatisticsReportCriterion[];
   total: number;
+  summary: StatisticsSummary;
   patients: { id: string; name: string; identityNo: string | null }[];
 }
 

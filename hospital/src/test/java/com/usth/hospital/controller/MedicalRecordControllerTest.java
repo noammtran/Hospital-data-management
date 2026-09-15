@@ -6,16 +6,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.usth.hospital.dto.response.VisitResponse;
+import com.usth.hospital.config.SecurityConfig;
 import com.usth.hospital.exception.PatientNotFoundException;
+import com.usth.hospital.repository.AppUserRepository;
 import com.usth.hospital.service.MedicalRecordService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(MedicalRecordController.class)
+@Import(SecurityConfig.class)
+@WithMockUser(authorities = "VIEW_MEDICAL_RECORD")
 class MedicalRecordControllerTest {
 
     @Autowired
@@ -24,10 +30,13 @@ class MedicalRecordControllerTest {
     @MockitoBean
     private MedicalRecordService medicalRecordService;
 
+    @MockitoBean
+    private AppUserRepository appUserRepository;
+
     @Test
     void medicalRecord_returnsVisits() throws Exception {
         VisitResponse visit = new VisitResponse("a1", "2026-06-07", null, "Cardiology", "Dr A",
-                null, "Routine checkup", 3, 1, null, List.of(), List.of());
+                null, "Routine checkup", 3, 1, null, List.of(), List.of(), null);
         when(medicalRecordService.getMedicalRecord("patient-1")).thenReturn(List.of(visit));
 
         mockMvc.perform(get("/api/v1/patients/{id}/medical-record", "patient-1"))

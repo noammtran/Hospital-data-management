@@ -1,0 +1,153 @@
+.portal-page {
+  display: grid;
+  gap: 20px;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.portal-heading,
+.card-heading,
+.section-heading {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+.portal-heading h1 {
+  margin-bottom: 4px;
+}
+
+.portal-heading p,
+.section-heading p {
+  margin-bottom: 0;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.read-only-badge,
+.status-badge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--mat-sys-on-surface-variant);
+  background: var(--mat-sys-surface-container-high);
+  border-radius: 999px;
+}
+
+.read-only-badge mat-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+.profile-card mat-card-content {
+  display: grid;
+  gap: 24px;
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--mat-sys-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.card-heading h2,
+.section-heading h2 {
+  margin: 4px 0 0;
+}
+
+section h3 {
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 24px;
+  margin: 0;
+}
+
+.detail-grid div {
+  min-width: 0;
+}
+
+.detail-grid .wide {
+  grid-column: span 3;
+}
+
+dt {
+  margin-bottom: 3px;
+  font-size: 0.75rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+dd {
+  margin: 0;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.admissions-section {
+  display: grid;
+  gap: 12px;
+}
+
+mat-expansion-panel + mat-expansion-panel {
+  margin-top: 8px;
+}
+
+.record-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  overflow-wrap: anywhere;
+}
+
+.record-title small {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+mat-expansion-panel-header {
+  height: auto;
+  min-height: 64px;
+  padding-block: 12px;
+}
+
+.state-message {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 24px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+@media (width <= 720px) {
+  .portal-heading,
+  .card-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-grid .wide {
+    grid-column: span 1;
+  }
+}

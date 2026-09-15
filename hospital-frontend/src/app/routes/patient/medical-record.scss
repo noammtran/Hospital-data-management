@@ -1,0 +1,74 @@
+:host {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+h4 {
+  margin: 20px 0 8px;
+  font-size: 15px;
+}
+
+dl {
+  margin: 0;
+}
+
+dl > div {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 16px;
+  padding: 6px 0;
+}
+
+dt,
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+dd {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+p {
+  margin: 6px 0;
+}
+
+.summary {
+  padding: 16px;
+  background: var(--mat-sys-surface-container-low);
+  border-radius: 8px;
+}
+
+.summary h4 {
+  margin-top: 0;
+}
+
+.entry {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.clinical-text {
+  white-space: pre-wrap;
+}
+
+.result {
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 6px;
+}
+
+summary {
+  cursor: pointer;
+}
+
+.clinical-history {
+  margin-top: 16px;
+}
+@media (width <= 600px) {
+  dl > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

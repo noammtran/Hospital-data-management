@@ -1,0 +1,4 @@
+interface:
+  display_name: "Java Code Quality"
+  short_description: "Review Java code quality and API contracts"
+  default_prompt: "Use $code-quality to review these Java changes and report concrete findings by severity."

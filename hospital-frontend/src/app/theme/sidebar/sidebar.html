@@ -4,9 +4,23 @@
       <span class="flex-fill"></span>
 
       @if (showToggle()) {
-        <mat-slide-toggle hideIcon [checked]="toggleChecked()" (change)="toggleCollapsed.emit()" />
+        <button
+          mat-icon-button
+          type="button"
+          [attr.aria-label]="toggleChecked() ? 'Expand sidebar' : 'Collapse sidebar'"
+          [matTooltip]="toggleChecked() ? 'Expand sidebar' : 'Collapse sidebar'"
+          matTooltipPosition="right"
+          (click)="toggleCollapsed.emit()"
+        >
+          <mat-icon>{{ toggleChecked() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+        </button>
       } @else {
-        <button mat-icon-button (click)="closeSidenav.emit()">
+        <button
+          mat-icon-button
+          type="button"
+          aria-label="Close navigation menu"
+          (click)="closeSidenav.emit()"
+        >
           <mat-icon>close</mat-icon>
         </button>
       }

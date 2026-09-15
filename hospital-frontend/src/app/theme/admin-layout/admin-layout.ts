@@ -1,13 +1,16 @@
 import { BidiModule } from '@angular/cdk/bidi';
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { Component, OnDestroy, ViewEncapsulation, inject, signal, viewChild } from '@angular/core';
+import { Component, ViewEncapsulation, inject, signal, viewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSidenav, MatSidenavContent, MatSidenavModule } from '@angular/material/sidenav';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { NgProgressbar } from 'ngx-progressbar';
 import { NgProgressRouter } from 'ngx-progressbar/router';
-import { Subscription, filter } from 'rxjs';
+import { filter } from 'rxjs';
 
-import { AppSettings, SettingsService } from '@core';
+import { SettingsService } from '@core';
 import { SidebarNotice } from '../sidebar-notice/sidebar-notice';
 import { Sidebar } from '../sidebar/sidebar';
 
@@ -23,13 +26,15 @@ const MONITOR_MEDIAQUERY = 'screen and (min-width: 600px)';
     RouterOutlet,
     BidiModule,
     MatSidenavModule,
+    MatButtonModule,
+    MatIconModule,
     NgProgressbar,
     NgProgressRouter,
     Sidebar,
     SidebarNotice,
   ],
 })
-export class AdminLayout implements OnDestroy {
+export class AdminLayout {
   readonly sidenav = viewChild.required<MatSidenav>('sidenav');
   readonly content = viewChild.required<MatSidenavContent>('content');
 
@@ -37,69 +42,47 @@ export class AdminLayout implements OnDestroy {
   private readonly router = inject(Router);
   private readonly settings = inject(SettingsService);
 
-  options = this.settings.options;
-
-  // Signals so the template reacts under zoneless change detection: mutating a
-  // plain object property would not refresh the collapsed/over class bindings.
+  // Desktop collapse is a preference. Mobile visibility is temporary and must
+  // not hide navigation on desktop or carry over to the next signed-in account.
   readonly collapsed = signal(this.settings.options.sidenavCollapsed);
+  readonly mobileSidenavOpened = signal(false);
   private readonly isMobileScreen = signal(false);
-
-  get themeColor() {
-    return this.settings.getThemeColor();
-  }
 
   get isOver() {
     return this.isMobileScreen();
   }
 
-  private layoutChangesSub = Subscription.EMPTY;
-
   constructor() {
-    this.layoutChangesSub = this.breakpointObserver
+    this.breakpointObserver
       .observe([MOBILE_MEDIAQUERY, MONITOR_MEDIAQUERY])
+      .pipe(takeUntilDestroyed())
       .subscribe(state => {
-        if (state.breakpoints[MOBILE_MEDIAQUERY]) {
-          this.isMobileScreen.set(true);
-          this.collapsed.set(false);
-          this.options.sidenavCollapsed = false;
-        } else {
-          this.isMobileScreen.set(false);
-        }
+        this.isMobileScreen.set(state.breakpoints[MOBILE_MEDIAQUERY]);
+        this.mobileSidenavOpened.set(false);
       });
 
-    this.router.events.pipe(filter(event => event instanceof NavigationEnd)).subscribe(e => {
-      if (this.isOver) {
-        this.sidenav().close();
-      }
-      this.content().scrollTo({ top: 0 });
-    });
-  }
-
-  ngOnDestroy() {
-    this.layoutChangesSub.unsubscribe();
+    this.router.events
+      .pipe(
+        filter(event => event instanceof NavigationEnd),
+        takeUntilDestroyed()
+      )
+      .subscribe(() => {
+        this.mobileSidenavOpened.set(false);
+        this.content().scrollTo({ top: 0 });
+      });
   }
 
   toggleCollapsed() {
     const next = !this.collapsed();
     this.collapsed.set(next);
-    this.options.sidenavCollapsed = next;
-    this.resetCollapsedState();
-  }
-
-  // TODO: Trigger when transition end
-  resetCollapsedState(delay = 400) {
-    setTimeout(() => this.settings.setOptions(this.options), delay);
+    this.settings.setOptions({ sidenavCollapsed: next });
   }
 
   onSidenavOpenedChange(isOpened: boolean) {
-    this.options.sidenavOpened = isOpened;
-    this.settings.setOptions(this.options);
-  }
-
-  updateOptions(options: AppSettings) {
-    this.options = options;
-    this.settings.setOptions(options);
-    this.settings.setDirection();
-    this.settings.setTheme();
+    // Material emits openedChange asynchronously. Ignore an older animation's
+    // event if navigation or a breakpoint has already changed the drawer.
+    if (this.isOver && isOpened === this.sidenav().opened) {
+      this.mobileSidenavOpened.set(isOpened);
+    }
   }
 }

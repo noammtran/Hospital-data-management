@@ -9,8 +9,8 @@ import org.springframework.data.repository.query.Param;
 /**
  * Read-only queries that assemble a patient's medical record: their treatment
  * episodes (ADMISSIONS) and, for each episode, the diagnoses and prescriptions
- * recorded during it. Diagnoses/prescriptions not tied to any episode are
- * skipped. Dates are returned as ISO strings, lookup codes as their numbers.
+ * recorded during it. Clinical rows include visit and admission links so
+ * outpatient care can be assembled without inventing an admission.
  */
 public interface MedicalRecordRepository extends Repository<PatientEntity, String> {
 
@@ -36,6 +36,7 @@ public interface MedicalRecordRepository extends Repository<PatientEntity, Strin
 
     @Query(value = """
             SELECT d.diagnose_admission_id AS "admissionId",
+                   d.diagnose_visit_id AS "visitId",
                    TO_CHAR(d.diagnose_date, 'YYYY-MM-DD') AS "diagnoseDate",
                    d.diagnose_icd_code AS "icdCode",
                    d.diagnose_desc AS "description",
@@ -44,13 +45,13 @@ public interface MedicalRecordRepository extends Repository<PatientEntity, Strin
             FROM DIAGNOSES d
             JOIN DOCTORS doc ON doc.doctor_id = d.diagnose_doctor_id
             WHERE d.diagnose_patient_id = :patientId
-              AND d.diagnose_admission_id IS NOT NULL
             ORDER BY d.diagnose_date
             """, nativeQuery = true)
     List<DiagnosisRow> findDiagnoses(@Param("patientId") String patientId);
 
     @Query(value = """
             SELECT pr.prescription_admission_id AS "admissionId",
+                   pr.prescription_visit_id AS "visitId",
                    m.medicine_name AS "medicineName",
                    pr.prescription_dosage AS "dosage",
                    pr.prescription_frequency AS "frequency",
@@ -59,7 +60,6 @@ public interface MedicalRecordRepository extends Repository<PatientEntity, Strin
             FROM PRESCRIPTIONS pr
             JOIN MEDICINES m ON m.medicine_id = pr.prescription_medicine_id
             WHERE pr.prescription_patient_id = :patientId
-              AND pr.prescription_admission_id IS NOT NULL
             ORDER BY m.medicine_name
             """, nativeQuery = true)
     List<PrescriptionRow> findPrescriptions(@Param("patientId") String patientId);
@@ -87,6 +87,7 @@ public interface MedicalRecordRepository extends Repository<PatientEntity, Strin
     }
 
     interface DiagnosisRow {
+        String getVisitId();
         String getAdmissionId();
 
         String getDiagnoseDate();
@@ -101,6 +102,7 @@ public interface MedicalRecordRepository extends Repository<PatientEntity, Strin
     }
 
     interface PrescriptionRow {
+        String getVisitId();
         String getAdmissionId();
 
         String getMedicineName();

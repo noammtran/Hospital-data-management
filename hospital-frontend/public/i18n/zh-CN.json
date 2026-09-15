@@ -1,8 +1,10 @@
 {
   "menu": {
     "dashboard": "数据大盘",
+    "my-record": "我的病历",
     "patients": "患者管理",
     "patient-history": "变更记录",
+    "audit-log": "审计日志",
     "statistics": "统计",
     "design": "设计",
     "design.colors": "颜色系统",

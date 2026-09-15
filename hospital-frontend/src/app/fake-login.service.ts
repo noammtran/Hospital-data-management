@@ -3,9 +3,7 @@ import { of } from 'rxjs';
 import { admin, LoginService, Menu } from '@core';
 import { map } from 'rxjs/operators';
 
-/**
- * You should delete this file in the real APP.
- */
+
 @Injectable()
 export class FakeLoginService extends LoginService {
   private token = { access_token: 'MW56YjMyOUAxNjMuY29tWm9uZ2Jpbg==', token_type: 'bearer' };

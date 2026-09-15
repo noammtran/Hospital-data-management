@@ -31,6 +31,9 @@ class MedicalRecordServiceTest {
     @Mock
     private PatientRepository patientRepository;
 
+    @Mock private com.usth.hospital.repository.CareVisitRepository careVisits;
+    @Mock private com.usth.hospital.service.impl.CareQueryService careQuery;
+
     @InjectMocks
     private MedicalRecordServiceImpl service;
 

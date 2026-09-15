@@ -1,0 +1,81 @@
+:host {
+  display: block;
+}
+
+h1 {
+  font-size: 26px;
+}
+
+.config-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 16px 0;
+}
+
+mat-form-field {
+  flex: 1 1 240px;
+}
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.table-scroll {
+  max-height: 480px;
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 12px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+th {
+  position: sticky;
+  top: 0;
+  background: var(--mat-sys-surface);
+}
+
+.error {
+  color: var(--mat-sys-error);
+}
+
+.work-summary,
+.doctor-section {
+  padding: 16px;
+  margin-top: 12px;
+  overflow-wrap: anywhere;
+  background: var(--mat-sys-surface-container-low);
+  border-radius: 8px;
+}
+
+.work-summary h2 {
+  margin-top: 0;
+  font-size: 20px;
+}
+
+.work-summary li {
+  margin: 6px 0;
+}
+
+.form-message {
+  flex-basis: 100%;
+}
+
+@media (width <= 600px) {
+  mat-form-field {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+}

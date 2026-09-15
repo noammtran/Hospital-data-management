@@ -1,114 +1,89 @@
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
-import { TokenService, User } from '@core/authentication';
+import { TokenService } from '@core/authentication';
 import { LocalStorageService, MemoryStorageService } from '@shared/services/storage.service';
-import { STATUS } from 'angular-in-memory-web-api';
+import { vi } from 'vitest';
 import { BASE_URL } from './base-url-interceptor';
 import { tokenInterceptor } from './token-interceptor';
 
 describe('TokenInterceptor', () => {
   let httpMock: HttpTestingController;
   let http: HttpClient;
-  let router: Router;
   let tokenService: TokenService;
-  const emptyFn = () => {};
-  const baseUrl = 'https://foo.bar';
-  const user: User = { id: 1, email: 'foo@bar.com' };
 
-  function init(url: string, access_token: string) {
+  function init(baseUrl = '', accessToken = 'token') {
     TestBed.configureTestingModule({
       providers: [
         { provide: LocalStorageService, useClass: MemoryStorageService },
-        { provide: BASE_URL, useValue: url },
+        { provide: BASE_URL, useValue: baseUrl },
         provideHttpClient(withInterceptors([tokenInterceptor])),
         provideHttpClientTesting(),
       ],
     });
-
     httpMock = TestBed.inject(HttpTestingController);
     http = TestBed.inject(HttpClient);
-    router = TestBed.inject(Router);
-    tokenService = TestBed.inject(TokenService).set({ access_token, token_type: 'bearer' });
+    tokenService = TestBed.inject(TokenService).set({
+      access_token: accessToken,
+      token_type: 'Bearer',
+    });
   }
 
-  function mockRequest(url: string, body?: any, headers?: any) {
-    http.get(url).subscribe({ next: emptyFn, error: emptyFn, complete: emptyFn });
-    const testRequest = httpMock.expectOne(url);
-    testRequest.flush(body ?? {}, headers ?? {});
-
-    return testRequest;
+  function request(url: string) {
+    http.get(url).subscribe({ error: () => undefined });
+    return httpMock.expectOne(url);
   }
 
   afterEach(() => httpMock.verify());
 
-  it('should append token when url does not has http scheme', () => {
-    init('', 'token');
+  it('should append a bearer token only to a relative /api/v1 request', () => {
+    init();
 
-    const headers = mockRequest('/user', user).request.headers;
+    const apiRequest = request('/api/v1/patients');
 
-    expect(headers.get('Authorization')).toEqual('Bearer token');
+    expect(apiRequest.request.headers.get('Authorization')).toBe('Bearer token');
+    expect(apiRequest.request.withCredentials).toBe(false);
+    apiRequest.flush({});
   });
 
-  it('should append token when url does not has http and base url not empty', () => {
-    init(baseUrl, 'token');
+  it('should append a bearer token to the configured API origin', () => {
+    const baseUrl = 'https://hospital.example';
+    init(baseUrl);
 
-    const headers = mockRequest('/user', user).request.headers;
+    const apiRequest = request(`${baseUrl}/api/v1/patients`);
 
-    expect(headers.get('Authorization')).toEqual('Bearer token');
+    expect(apiRequest.request.headers.get('Authorization')).toBe('Bearer token');
+    apiRequest.flush({});
   });
 
-  it('should append token when url include base url', () => {
-    init(baseUrl, 'token');
+  it('should not send a bearer token to static assets or another origin', () => {
+    init();
 
-    const headers = mockRequest(`${baseUrl}/user`, user).request.headers;
+    const menuRequest = request('data/menu.json');
+    expect(menuRequest.request.headers.has('Authorization')).toBe(false);
+    menuRequest.flush({});
 
-    expect(headers.get('Authorization')).toEqual('Bearer token');
+    const externalRequest = request('https://other.example/api/v1/patients');
+    expect(externalRequest.request.headers.has('Authorization')).toBe(false);
+    externalRequest.flush({});
   });
 
-  it('should not append token when url not include baseUrl', () => {
-    init(baseUrl, 'token');
+  it('should not attach an old token to the login request', () => {
+    init();
 
-    const headers = mockRequest('https://api.github.com', { success: true }).request.headers;
+    const loginRequest = request('/api/v1/auth/login');
 
-    expect(headers.has('Authorization')).toBeFalse();
+    expect(loginRequest.request.headers.has('Authorization')).toBe(false);
+    loginRequest.flush({});
   });
 
-  it('should not append token when base url is empty and url is not same site', () => {
-    init('', 'token');
+  it('should clear the token when an authenticated API request returns 401', () => {
+    init();
+    vi.spyOn(tokenService, 'clear');
 
-    const headers = mockRequest('https://api.github.com', { success: true }).request.headers;
-
-    expect(headers.has('Authorization')).toBeFalse();
-  });
-
-  it('should clear token when response status is unauthorized', () => {
-    init('', 'token');
-    spyOn(tokenService, 'clear');
-
-    mockRequest('/user', {}, { status: STATUS.UNAUTHORIZED, statusText: 'Unauthorized' });
+    request('/api/v1/patients').flush({}, { status: 401, statusText: 'Unauthorized' });
 
     expect(tokenService.clear).toHaveBeenCalled();
-  });
-
-  it('should navigate /auth/login when api url is /auth/logout and token is valid', () => {
-    init('', 'token');
-    const navigateByUrl = spyOn(router, 'navigateByUrl');
-    navigateByUrl.and.returnValue(Promise.resolve(true));
-
-    mockRequest('/auth/logout');
-
-    expect(navigateByUrl).toHaveBeenCalledWith('/auth/login');
-  });
-
-  it('should navigate /auth/login when api url is /auth/logout and token is invalid', () => {
-    init('', '');
-    const navigateByUrl = spyOn(router, 'navigateByUrl');
-    navigateByUrl.and.returnValue(Promise.resolve(true));
-
-    mockRequest('/auth/logout');
-
-    expect(navigateByUrl).toHaveBeenCalledWith('/auth/login');
+    expect(tokenService.valid()).toBe(false);
   });
 });

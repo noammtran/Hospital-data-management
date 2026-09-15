@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -17,20 +19,29 @@ import com.usth.hospital.dto.response.PatientListResponse;
 import com.usth.hospital.exception.DuplicateFieldException;
 import com.usth.hospital.exception.PatientNotFoundException;
 import com.usth.hospital.mapper.PatientMapper;
+import com.usth.hospital.model.AuditLogAction;
+import com.usth.hospital.model.AuditLogEntityType;
+import com.usth.hospital.model.AuditLogSensitivity;
 import com.usth.hospital.model.PatientEntity;
 import com.usth.hospital.model.PatientHistoryEntity;
+import com.usth.hospital.repository.AdmissionRepository;
 import com.usth.hospital.repository.PatientHistoryRepository;
 import com.usth.hospital.repository.PatientRepository;
+import com.usth.hospital.security.CurrentUserProvider;
 import com.usth.hospital.service.PatientIdGenerator;
 import com.usth.hospital.service.impl.PatientServiceImpl;
+import com.usth.hospital.service.impl.PatientAccountLifecycleService;
+import com.usth.hospital.service.impl.PatientStatusTransitionService;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -48,6 +59,9 @@ class PatientServiceImplTest {
     private PatientRepository patientRepository;
 
     @Mock
+    private AdmissionRepository admissionRepository;
+
+    @Mock
     private PatientHistoryRepository patientHistoryRepository;
 
     @Spy
@@ -55,6 +69,18 @@ class PatientServiceImplTest {
 
     @Spy
     private PatientIdGenerator patientIdGenerator = new PatientIdGenerator();
+
+    @Mock
+    private CurrentUserProvider currentUserProvider;
+
+    @Mock
+    private AuditLogService auditLogService;
+
+    @Mock
+    private PatientStatusTransitionService patientStatusTransitionService;
+
+    @Mock
+    private PatientAccountLifecycleService patientAccountLifecycleService;
 
     @InjectMocks
     private PatientServiceImpl service;
@@ -66,6 +92,7 @@ class PatientServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(currentUserProvider.username()).thenReturn("doctor1");
         existing = PatientEntity.builder()
                 .id(PATIENT_ID)
                 .name("Nguyen Van A")
@@ -79,19 +106,21 @@ class PatientServiceImplTest {
                 .build();
     }
 
-    private UpdatePatientRequest request(String name, String phoneNo, Integer status) {
+    private UpdatePatientRequest request(String name, String phoneNo) {
         return new UpdatePatientRequest(name, null, 1, null, phoneNo, null, null,
-                null, null, null, null, null, null, null, null, status, null);
+                null, null, null, null, null, null, null, null, null);
     }
 
     private CreatePatientRequest createWithIdentity(String identityNo) {
-        return new CreatePatientRequest("Nguyen Van A", null, 1, null, "0900000000", null,
-                identityNo, null, null, null, null, null, null, null, null, 0, null);
+        return new CreatePatientRequest(
+                "Nguyen Van A", LocalDate.of(1990, 1, 2), 1, null, "0900000000", null,
+                identityNo, 7, null, null, null, LocalDate.of(2027, 12, 31),
+                null, null, null, null);
     }
 
     private UpdatePatientRequest updateWithIdentity(String identityNo) {
         return new UpdatePatientRequest("Nguyen Van A", null, 1, null, "0900000000", null,
-                identityNo, null, null, null, null, null, null, null, null, 0, null);
+                identityNo, null, null, null, null, null, null, null, null, null);
     }
 
     @Test
@@ -102,6 +131,7 @@ class PatientServiceImplTest {
                 .isInstanceOf(DuplicateFieldException.class)
                 .hasFieldOrPropertyWithValue("field", "identityNo");
         verify(patientRepository, never()).save(any());
+        verify(auditLogService, never()).record(any());
     }
 
     @Test
@@ -112,17 +142,33 @@ class PatientServiceImplTest {
         PatientDetailResponse created = service.create(createWithIdentity("079123456789"));
 
         assertThat(created.identityNo()).isEqualTo("079123456789");
+        assertThat(created.createdBy()).isEqualTo("doctor1");
+        assertThat(created.lastUpdatedBy()).isEqualTo("doctor1");
         verify(patientRepository).save(any(PatientEntity.class));
-    }
-
-    @Test
-    void create_noIdentity_skipsUniquenessCheck() {
-        when(patientRepository.save(any(PatientEntity.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        service.create(createWithIdentity(null));
-
-        verify(patientRepository, never()).existsByIdentityNo(any());
-        verify(patientRepository).save(any(PatientEntity.class));
+        verify(patientAccountLifecycleService).createFor(any(PatientEntity.class));
+        ArgumentCaptor<AuditEventCommand> auditCaptor = ArgumentCaptor.forClass(AuditEventCommand.class);
+        verify(auditLogService).record(auditCaptor.capture());
+        assertThat(auditCaptor.getValue()).satisfies(event -> {
+            assertThat(event.action()).isEqualTo(AuditLogAction.CREATE);
+            assertThat(event.entityType()).isEqualTo(AuditLogEntityType.PATIENT);
+            assertThat(event.entityId()).isEqualTo(created.id());
+            assertThat(event.targetLabel()).isEqualTo("Nguyen Van A · " + created.id());
+            assertThat(event.summary()).isEqualTo("Record created");
+            assertThat(event.changes()).extracting(AuditLogChange::fieldKey)
+                    .contains(
+                            "name", "birthDate", "gender", "phoneNo", "identityNo",
+                            "bloodType", "insuranceExpiry", "status");
+            assertThat(event.changes())
+                    .extracting(AuditLogChange::fieldKey, AuditLogChange::sensitivity)
+                    .contains(
+                            tuple("birthDate", AuditLogSensitivity.PERSONAL),
+                            tuple("gender", AuditLogSensitivity.PERSONAL),
+                            tuple("insuranceExpiry", AuditLogSensitivity.PERSONAL),
+                            tuple("bloodType", AuditLogSensitivity.MEDICAL),
+                            tuple("name", AuditLogSensitivity.GENERAL),
+                            tuple("status", AuditLogSensitivity.GENERAL)
+                    );
+        });
     }
 
     @Test
@@ -137,26 +183,33 @@ class PatientServiceImplTest {
     }
 
     @Test
-    void update_changesThreeFields_writesOneHistoryRowPerField() {
+    void update_changesTwoFields_writesOneHistoryRowPerField() {
         when(patientRepository.findById(PATIENT_ID)).thenReturn(java.util.Optional.of(existing));
         when(patientRepository.save(any(PatientEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        service.update(PATIENT_ID, request("Tran Thi B", "0911111111", 1));
+        service.update(PATIENT_ID, request("Tran Thi B", "0911111111"));
 
         verify(patientHistoryRepository).saveAll(historyCaptor.capture());
+        verify(patientAccountLifecycleService).synchronize(existing);
         List<PatientHistoryEntity> rows = historyCaptor.getValue();
 
         assertThat(rows).extracting(PatientHistoryEntity::getFieldName)
-                .containsExactlyInAnyOrder("name", "phoneNo", "status");
+                .containsExactlyInAnyOrder("name", "phoneNo");
         assertThat(rows).allSatisfy(row -> {
             assertThat(row.getPatientId()).isEqualTo(PATIENT_ID);
-            assertThat(row.getChangedBy()).isEqualTo("SYSTEM");
+            assertThat(row.getChangedBy()).isEqualTo("doctor1");
             assertThat(row.getId()).isNotBlank();
         });
         PatientHistoryEntity nameRow = rows.stream()
                 .filter(r -> r.getFieldName().equals("name")).findFirst().orElseThrow();
         assertThat(nameRow.getOldValue()).isEqualTo("Nguyen Van A");
         assertThat(nameRow.getNewValue()).isEqualTo("Tran Thi B");
+        ArgumentCaptor<AuditEventCommand> auditCaptor = ArgumentCaptor.forClass(AuditEventCommand.class);
+        verify(auditLogService).record(auditCaptor.capture());
+        assertThat(auditCaptor.getValue().action()).isEqualTo(AuditLogAction.UPDATE);
+        assertThat(auditCaptor.getValue().summary()).isEqualTo("2 fields changed");
+        assertThat(auditCaptor.getValue().changes()).extracting(AuditLogChange::fieldKey)
+                .containsExactly("name", "phoneNo");
     }
 
     @Test
@@ -164,18 +217,23 @@ class PatientServiceImplTest {
         when(patientRepository.findById(PATIENT_ID)).thenReturn(java.util.Optional.of(existing));
         when(patientRepository.save(any(PatientEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        service.update(PATIENT_ID, request("Nguyen Van A", "0900000000", 0));
+        service.update(PATIENT_ID, request("Nguyen Van A", "0900000000"));
 
         verify(patientHistoryRepository, never()).saveAll(any());
+        ArgumentCaptor<AuditEventCommand> auditCaptor = ArgumentCaptor.forClass(AuditEventCommand.class);
+        verify(auditLogService).record(auditCaptor.capture());
+        assertThat(auditCaptor.getValue().changes()).isEmpty();
+        assertThat(auditCaptor.getValue().summary()).isEqualTo("No field changes");
     }
 
     @Test
     void update_unknownPatient_throwsNotFound() {
         when(patientRepository.findById(PATIENT_ID)).thenReturn(java.util.Optional.empty());
 
-        assertThatThrownBy(() -> service.update(PATIENT_ID, request("X", "Y", 1)))
+        assertThatThrownBy(() -> service.update(PATIENT_ID, request("X", "Y")))
                 .isInstanceOf(PatientNotFoundException.class);
         verify(patientHistoryRepository, never()).saveAll(any());
+        verify(auditLogService, never()).record(any());
     }
 
     @Test
@@ -184,6 +242,85 @@ class PatientServiceImplTest {
 
         assertThatThrownBy(() -> service.getHistory(PATIENT_ID, PageRequest.of(0, 20)))
                 .isInstanceOf(PatientNotFoundException.class);
+    }
+
+    @Test
+    void delete_releasesActiveAdmissionRoomBeforePatientCascade() {
+        when(patientRepository.findByIdForUpdate(PATIENT_ID))
+                .thenReturn(java.util.Optional.of(existing));
+        when(admissionRepository.findActiveRoomIdsByPatientIds(List.of(PATIENT_ID)))
+                .thenReturn(List.of(7L));
+
+        service.delete(PATIENT_ID);
+
+        InOrder mutationOrder = inOrder(patientRepository, admissionRepository);
+        mutationOrder.verify(patientRepository).findByIdForUpdate(PATIENT_ID);
+        mutationOrder.verify(admissionRepository).findActiveRoomIdsByPatientIds(List.of(PATIENT_ID));
+        mutationOrder.verify(admissionRepository).releaseRoom(7L);
+        verify(patientAccountLifecycleService).deleteFor(PATIENT_ID);
+        mutationOrder.verify(patientRepository).deleteById(PATIENT_ID);
+        ArgumentCaptor<AuditEventCommand> auditCaptor = ArgumentCaptor.forClass(AuditEventCommand.class);
+        verify(auditLogService).record(auditCaptor.capture());
+        assertThat(auditCaptor.getValue()).satisfies(event -> {
+            assertThat(event.action()).isEqualTo(AuditLogAction.DELETE);
+            assertThat(event.entityId()).isEqualTo(PATIENT_ID);
+            assertThat(event.targetLabel()).isEqualTo("Nguyen Van A · " + PATIENT_ID);
+            assertThat(event.summary()).isEqualTo("Permanently deleted");
+            assertThat(event.changes()).allSatisfy(change -> assertThat(change.newValue()).isNull());
+        });
+    }
+
+    @Test
+    void bulkDelete_locksPatientsInStableOrderAndReleasesEveryActiveRoom() {
+        String secondPatientId = "P26MB002";
+        List<String> requestedIds = List.of(secondPatientId, PATIENT_ID, secondPatientId);
+        List<String> orderedIds = List.of(secondPatientId, PATIENT_ID);
+        when(patientRepository.findByIdForUpdate(PATIENT_ID))
+                .thenReturn(java.util.Optional.of(existing));
+        when(patientRepository.findByIdForUpdate(secondPatientId))
+                .thenReturn(java.util.Optional.of(PatientEntity.builder()
+                        .id(secondPatientId).name("Second Patient").build()));
+        when(admissionRepository.findActiveRoomIdsByPatientIds(orderedIds))
+                .thenReturn(List.of(7L, 8L));
+
+        service.bulkDelete(requestedIds);
+
+        InOrder lockOrder = inOrder(patientRepository);
+        lockOrder.verify(patientRepository).findByIdForUpdate(secondPatientId);
+        lockOrder.verify(patientRepository).findByIdForUpdate(PATIENT_ID);
+        verify(admissionRepository).releaseRoom(7L);
+        verify(admissionRepository).releaseRoom(8L);
+        verify(patientAccountLifecycleService).deleteFor(orderedIds);
+        verify(patientRepository).deleteAllById(orderedIds);
+        ArgumentCaptor<AuditEventCommand> auditCaptor = ArgumentCaptor.forClass(AuditEventCommand.class);
+        verify(auditLogService).record(auditCaptor.capture());
+        assertThat(auditCaptor.getValue().action()).isEqualTo(AuditLogAction.BULK_DELETE);
+        assertThat(auditCaptor.getValue().summary()).isEqualTo("2 records deleted");
+        assertThat(auditCaptor.getValue().affectedTargets())
+                .extracting(AuditLogTarget::entityId, AuditLogTarget::targetLabel)
+                .containsExactly(
+                        tuple(secondPatientId, "Second Patient · " + secondPatientId),
+                        tuple(PATIENT_ID, "Nguyen Van A · " + PATIENT_ID)
+                );
+    }
+
+    @Test
+    void bulkDelete_recordsEveryAffectedTargetWithoutPackingIdsIntoSummaryText() {
+        List<String> requestedIds = IntStream.range(0, 150)
+                .mapToObj(index -> "P26AA" + String.format("%03d", index))
+                .toList();
+        when(patientRepository.findByIdForUpdate(any())).thenAnswer(invocation -> {
+            String id = invocation.getArgument(0);
+            return java.util.Optional.of(PatientEntity.builder().id(id).name("Synthetic Patient").build());
+        });
+        when(admissionRepository.findActiveRoomIdsByPatientIds(requestedIds)).thenReturn(List.of());
+
+        service.bulkDelete(requestedIds);
+
+        ArgumentCaptor<AuditEventCommand> auditCaptor = ArgumentCaptor.forClass(AuditEventCommand.class);
+        verify(auditLogService).record(auditCaptor.capture());
+        assertThat(auditCaptor.getValue().summary()).isEqualTo("150 records deleted");
+        assertThat(auditCaptor.getValue().affectedTargets()).hasSize(150);
     }
 
     @Test

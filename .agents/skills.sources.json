@@ -1,0 +1,263 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-27",
+  "install_method": "Codex skill-installer/install-skill-from-github.py with pinned Git commits",
+  "installed_tree_sha256_algorithm": "SHA-256 of UTF-8 records sorted by PowerShell Sort-Object FullName, each record: relative POSIX path + NUL + lowercase file SHA-256 + LF",
+  "official_openai_catalog_audit": {
+    "repository": "https://github.com/openai/skills",
+    "commit": "49f948faa9258a0c61caceaf225e179651397431",
+    "result": "No curated Angular, Java review, Spring Boot, JPA, database-design, English LaTeX paper, or paper-audit equivalent was available."
+  },
+  "skills": [
+    {
+      "name": "angular-developer",
+      "source_repository": "https://github.com/angular/skills",
+      "source_path": "angular-developer",
+      "commit": "db574d779823fad75472413768838c909f4bf7fa",
+      "upstream_tree_sha1": "34ed6e321711eaae62de5a00de056ed9a75b2517",
+      "authoring_repository": "https://github.com/angular/angular",
+      "authoring_path": "skills/dev-skills/angular-developer",
+      "authoring_commit": "5ad823139758b4d3a8a021d378b008c3457f8689",
+      "license": "MIT",
+      "license_file": ".agents/licenses/angular-MIT.txt",
+      "upstream_codex_status": "Portable Agent Skills package maintained by the Angular team; no separate Codex build.",
+      "codex_overlays": [
+        "Added agents/openai.yaml.",
+        "Added the Codex CLI registration example to references/mcp.md."
+      ],
+      "installed_tree_sha256": "7660f94f40ff4ba93b15ae51480375a1f516939f855aeebbf1fe4991d5ee238c"
+    },
+    {
+      "name": "academic-research-suite",
+      "source_repository": "https://github.com/Imbad0202/academic-research-skills-codex",
+      "source_path": "skills/academic-research-suite",
+      "release": "v0.1.22",
+      "commit": "f8d6b061efe98564a3f554c917fce66dcef6ca54",
+      "upstream_tree_sha1": "e8db1e984e8a1d50047e54d3cf18ff00a0cc88ad",
+      "vendored_source_repositories": [
+        {
+          "repository": "https://github.com/Imbad0202/academic-research-skills",
+          "commit": "828ef3b613b0e8b91830da3328a1e33d4eb5ab4c"
+        },
+        {
+          "repository": "https://github.com/Imbad0202/experiment-agent",
+          "commit": "9b063fa895eaf1f63ac99ac03f924f8d31aa8d26"
+        }
+      ],
+      "license": "CC-BY-NC-4.0",
+      "license_file": ".agents/licenses/Imbad0202-CC-BY-NC-4.0.txt",
+      "upstream_codex_status": "Official Codex-native sibling distribution. It intentionally exposes one academic-research-suite router instead of separate deep-research, academic-paper, or academic-paper-reviewer skills.",
+      "codex_overlays": [],
+      "content_verification": {
+        "method": "Git blob SHA-1 comparison against the pinned upstream tree",
+        "result": "exact",
+        "files": 1140
+      },
+      "installed_tree_sha256": "3fa598e0a2cb5205539fd4eb163079e30641570bcc73ee55c5cfc77393646a27"
+    },
+    {
+      "name": "code-quality",
+      "source_repository": "https://github.com/piomin/claude-ai-spring-boot",
+      "source_path": ".claude/skills/code-quality",
+      "commit": "d87e7a38588a0a945ae2c11a251954897692330e",
+      "upstream_tree_sha1": "a91358943cd733dba32369230615af1a51d793ea",
+      "license": "Apache-2.0",
+      "license_file": ".agents/licenses/piomin-Apache-2.0.txt",
+      "upstream_codex_status": "Upstream is Claude-only; this directory is a project Codex adapter.",
+      "codex_overlays": [
+        "Added agents/openai.yaml."
+      ],
+      "installed_tree_sha256": "d9661e8d6307aceaa576dfb6f7b2fc575ae4cc63bcfb147a15f5ed706d79c18e"
+    },
+    {
+      "name": "database-designer",
+      "source_repository": "https://github.com/alirezarezvani/claude-skills",
+      "source_path": "engineering/skills/database-designer",
+      "commit": "aa8d778811a557a2c28ccadda4cf3d0bd028a4cc",
+      "upstream_tree_sha1": "5dd515012e49ea19cd6fe02ce0b6cbebc0e99eed",
+      "license": "MIT",
+      "license_file": ".agents/licenses/alirezarezvani-MIT.txt",
+      "upstream_codex_status": "Upstream explicitly supports Codex and other Agent Skills clients.",
+      "codex_overlays": [
+        "Added agents/openai.yaml.",
+        "Neutralized a Claude-branded collection sentence in README.md.",
+        "Added an explicit Oracle/Flyway compatibility guard ahead of generic PostgreSQL examples and generators.",
+        "Oracle and Flyway project policy remains in AGENTS.md and hospital/AGENTS.md."
+      ],
+      "installed_tree_sha256": "f59310a78521e1711497c1a61260f42caa9c1a8d190f8ab6e83e21d154467d46"
+    },
+    {
+      "name": "hospital-crud",
+      "source_repository": null,
+      "source_path": ".agents/skills/hospital-crud",
+      "commit": null,
+      "license": "Project-local",
+      "upstream_codex_status": "Native project skill created for this repository.",
+      "codex_overlays": [],
+      "installed_tree_sha256": "e50ac7b83770dc08d91e4ec052d5783da0af2088034897ec47b7cbef758385f4"
+    },
+    {
+      "name": "jpa-patterns",
+      "source_repository": "https://github.com/piomin/claude-ai-spring-boot",
+      "source_path": ".claude/skills/jpa-patterns",
+      "commit": "d87e7a38588a0a945ae2c11a251954897692330e",
+      "upstream_tree_sha1": "cdfee7b2926c4f9f8ffa032ffde89bf01bfd0be9",
+      "license": "Apache-2.0; original lineage also attributed under MIT",
+      "license_files": [
+        ".agents/licenses/piomin-Apache-2.0.txt",
+        ".agents/licenses/decebals-MIT.txt"
+      ],
+      "upstream_codex_status": "Upstream is Claude-only; this directory is a project Codex adapter.",
+      "codex_overlays": [
+        "Added agents/openai.yaml.",
+        "Completed the upstream-truncated LazyInitializationException Java example using the verified deeper MIT lineage.",
+        "hospital/AGENTS.md forbids Open Session in View and requires explicit queries, projections, or in-transaction mapping."
+      ],
+      "installed_tree_sha256": "132b7949418d253f482cfa38981874b23696c7cd4a8b9ee68bc752bf0981f6ce"
+    },
+    {
+      "name": "latex-paper-en",
+      "source_repository": "https://github.com/bahayonghang/academic-writing-skills",
+      "source_path": "academic-writing-skills/latex-paper-en",
+      "release": "v6.0.0",
+      "commit": "f59ac75cfdf9b85d647dae043b6deade5c292cf6",
+      "upstream_tree_sha1": "18273300f6c3d799c824ffd11e16721ff920a15e",
+      "license": "Academic Use Only - Not for commercial use; upstream provides no standalone license file",
+      "license_file": null,
+      "upstream_codex_status": "Upstream names Codex and ships OpenAI metadata, but requires normalization for the current Codex validator.",
+      "codex_overlays": [
+        "Moved unsupported when_to_use and argument-hint frontmatter semantics into Codex-compatible description/body instructions.",
+        "Removed Claude-specific allowed-tools names.",
+        "Normalized agents/openai.yaml and added an explicit $latex-paper-en prompt.",
+        "Replaced the $ARGUMENTS convention and documented explicit $SKILL_DIR resolution.",
+        "Changed the Exa MCP setup example from the Claude CLI to the Codex CLI."
+      ],
+      "installed_tree_sha256": "c4f9404d4463802f648bcec0c0a223b5856596dc09c2234688b59eea00923aa6"
+    },
+    {
+      "name": "paper-audit",
+      "source_repository": "https://github.com/bahayonghang/academic-writing-skills",
+      "source_path": "academic-writing-skills/paper-audit",
+      "release": "v6.0.0",
+      "commit": "f59ac75cfdf9b85d647dae043b6deade5c292cf6",
+      "upstream_tree_sha1": "87b527bdbabc70c5dcf2aea83cbe739412cdb4c0",
+      "license": "Academic Use Only - Not for commercial use; upstream provides no standalone license file",
+      "license_file": null,
+      "upstream_codex_status": "Upstream names Codex and ships OpenAI metadata, but requires normalization for the current Codex validator.",
+      "codex_overlays": [
+        "Moved unsupported when_to_use and argument-hint frontmatter semantics into Codex-compatible description/body instructions.",
+        "Removed Claude-specific allowed-tools names.",
+        "Normalized agents/openai.yaml and added an explicit $paper-audit prompt.",
+        "Replaced the $ARGUMENTS convention, documented explicit $SKILL_DIR resolution, and neutralized the ScholarEval LLM-stage label."
+      ],
+      "installed_tree_sha256": "f5b9f5279ae57799b96ff70cd6edd2f6b07e2b767cec6208cc1e3c48c1e10a75"
+    },
+    {
+      "name": "bib-search-citation",
+      "source_repository": "https://github.com/bahayonghang/academic-writing-skills",
+      "source_path": "academic-writing-skills/bib-search-citation",
+      "release": "v6.0.0",
+      "commit": "f59ac75cfdf9b85d647dae043b6deade5c292cf6",
+      "upstream_tree_sha1": "4bdb164f82e639fcfbab417179c99e20009673ce",
+      "license": "Academic Use Only - Not for commercial use; upstream provides no standalone license file",
+      "license_file": null,
+      "upstream_codex_status": "Upstream names Codex, but this exact unmodified directory does not pass the current Codex quick validator because of when_to_use and argument-hint frontmatter.",
+      "codex_overlays": [],
+      "content_verification": {
+        "method": "Git blob SHA-1 comparison against the pinned upstream tree",
+        "result": "exact",
+        "files": 19
+      },
+      "installed_tree_sha256": "b5a43e76d765293669d8701c3bec0b0be3bfd0c6b66e50a03bd072664232767d"
+    },
+    {
+      "name": "cover-letter",
+      "source_repository": "https://github.com/bahayonghang/academic-writing-skills",
+      "source_path": "academic-writing-skills/cover-letter",
+      "release": "v6.0.0",
+      "commit": "f59ac75cfdf9b85d647dae043b6deade5c292cf6",
+      "upstream_tree_sha1": "fce204e142ddad200d3fdf4125a6246dfb48829a",
+      "license": "Academic Use Only - Not for commercial use; upstream provides no standalone license file",
+      "license_file": null,
+      "upstream_codex_status": "Upstream names Codex, but this exact unmodified directory does not pass the current Codex quick validator because of when_to_use and argument-hint frontmatter.",
+      "codex_overlays": [],
+      "content_verification": {
+        "method": "Git blob SHA-1 comparison against the pinned upstream tree",
+        "result": "exact",
+        "files": 49
+      },
+      "installed_tree_sha256": "b5037d20b7fb29aaeee26aff380addaed049fc2de40ec771f33d63329f3aa1a3"
+    },
+    {
+      "name": "latex-thesis-zh",
+      "source_repository": "https://github.com/bahayonghang/academic-writing-skills",
+      "source_path": "academic-writing-skills/latex-thesis-zh",
+      "release": "v6.0.0",
+      "commit": "f59ac75cfdf9b85d647dae043b6deade5c292cf6",
+      "upstream_tree_sha1": "bcdcece88a7ac3947564c9ba2df19cf23fbd0775",
+      "license": "Academic Use Only - Not for commercial use; upstream provides no standalone license file",
+      "license_file": null,
+      "upstream_codex_status": "Upstream names Codex, but this exact unmodified directory does not pass the current Codex quick validator because of when_to_use and argument-hint frontmatter.",
+      "codex_overlays": [],
+      "content_verification": {
+        "method": "Git blob SHA-1 comparison against the pinned upstream tree",
+        "result": "exact",
+        "files": 89
+      },
+      "installed_tree_sha256": "1a99cbf60ddf2adbdab9565f71d439c20c027143ce5514352b8b5e610f96d2dd"
+    },
+    {
+      "name": "typst-paper",
+      "source_repository": "https://github.com/bahayonghang/academic-writing-skills",
+      "source_path": "academic-writing-skills/typst-paper",
+      "release": "v6.0.0",
+      "commit": "f59ac75cfdf9b85d647dae043b6deade5c292cf6",
+      "upstream_tree_sha1": "7fa279edc66f7b09dba36e70f49894ab0d6d1d95",
+      "license": "Academic Use Only - Not for commercial use; upstream provides no standalone license file",
+      "license_file": null,
+      "upstream_codex_status": "Upstream names Codex, but this exact unmodified directory does not pass the current Codex quick validator because of when_to_use and argument-hint frontmatter.",
+      "codex_overlays": [],
+      "content_verification": {
+        "method": "Git blob SHA-1 comparison against the pinned upstream tree",
+        "result": "exact",
+        "files": 79
+      },
+      "installed_tree_sha256": "7c0b6323ac0259dbdc83a32c4fbfece97b3f3bc742b6f2ddbcc8398e5f6390bd"
+    },
+    {
+      "name": "design-taste-frontend",
+      "source_repository": "https://github.com/leonxlnx/taste-skill",
+      "source_path": "skills/taste-skill",
+      "commit": "e988add20dab0fa97d7a76781c48961c8184288e",
+      "upstream_tree_sha1": "a6d128e53b4ec0238baee751dde33bf707adb5ec",
+      "license": "MIT",
+      "license_file": ".agents/licenses/leonxlnx-MIT.txt",
+      "upstream_codex_status": "Portable Agent Skill; the exact content passes the current Codex quick validator. The project directory uses the frontmatter install name rather than the upstream folder basename.",
+      "codex_overlays": [],
+      "content_verification": {
+        "method": "Git blob SHA-1 comparison against the pinned upstream tree",
+        "result": "exact",
+        "files": 1
+      },
+      "installed_tree_sha256": "40ef50925b446e08a4ad5cead8edeb98f48982eb498b0073fe6a0b27ea736769"
+    },
+    {
+      "name": "spring-boot",
+      "source_repository": "https://github.com/piomin/claude-ai-spring-boot",
+      "source_path": ".claude/skills/spring-boot",
+      "commit": "d87e7a38588a0a945ae2c11a251954897692330e",
+      "upstream_tree_sha1": "c17db041c7cd7eca6c123371eb3a91785ce64afb",
+      "license": "Apache-2.0",
+      "license_file": ".agents/licenses/piomin-Apache-2.0.txt",
+      "upstream_codex_status": "Upstream is Claude-only; this directory is a project Codex adapter.",
+      "codex_overlays": [
+        "Added agents/openai.yaml.",
+        "Added a hospital-project override so Security, OAuth2, WebFlux, Actuator, and cloud infrastructure remain opt-in.",
+        "Normalized the design and test workflow to use project-specific decisions and documented wrapper commands.",
+        "Corrected the data reference so repository/entity annotations are in valid layers and changed the migration example to Oracle/Flyway syntax.",
+        "Repository-specific workflow and verification rules remain in AGENTS.md and hospital/AGENTS.md."
+      ],
+      "installed_tree_sha256": "76a0ce1f738815a3e17f69d39014297adfa67362e8afb3c39e387306a6561235"
+    }
+  ]
+}
