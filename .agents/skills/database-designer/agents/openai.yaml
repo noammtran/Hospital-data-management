@@ -1,4 +1,0 @@
-interface:
-  display_name: "Database Designer"
-  short_description: "Design schemas, migrations, and efficient queries"
-  default_prompt: "Use $database-designer to design or review this database schema, migration, or query."

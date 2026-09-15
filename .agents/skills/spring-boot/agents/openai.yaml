@@ -1,4 +1,0 @@
-interface:
-  display_name: "Spring Boot"
-  short_description: "Build production-ready Spring Boot services"
-  default_prompt: "Use $spring-boot to implement or review this Spring Boot task within the repository's existing architecture."

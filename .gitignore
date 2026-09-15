@@ -1,4 +1,6 @@
 # Local assistant and editor state
+.agents/
+AGENTS.md
 /.claude/
 /.codex/
 /.codex-tmp/
